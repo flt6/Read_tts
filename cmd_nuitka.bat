@@ -1,3 +1,2 @@
-nuitka --follow-imports --include-package-data=websockets --noinclude-IPython-mode=nofollow --standalone --include-data-file="F:\ProgramData\Anaconda3\Lib\site-packages\grapheme\data\grapheme_break_property.json"=grapheme\data\ --onefile gather.py
-
-nuitka --follow-imports --include-package-data=websockets --noinclude-IPython-mode=nofollow --include-data-file="C:\Users\dicp\AppData\Roaming\Python\Python3 8\site-packages\grapheme\data\grapheme_break_property.json"=grapheme\data\ gather.py
+nuitka --follow-imports --include-package-data=websockets --noinclude-IPython-mode=nofollow --standalone --include-data-file="grapheme_break_property.json"=grapheme\data\ --onefile gather.py
+pause

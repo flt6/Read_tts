@@ -1,4 +1,3 @@
-import sys
 from requests import get
 from json import loads
 from traceback import format_exc
@@ -19,7 +18,7 @@ USE_CHAC = False
 
 SSML_MODEL = '''<speak xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="http://www.w3.org/2001/mstts" xmlns:emo="http://www.w3.org/2009/10/emotionml" version="1.0" xml:lang="en-US">
     <voice name="zh-CN-XiaoxiaoNeural">
-        <prosody rate="30%" pitch="0%">
+        <prosody rate="45%" pitch="0%">
             {}
         </prosody>
     </voice>
@@ -161,9 +160,9 @@ class Main:
                 SSML_text = SSML_MODEL.format(cha)
                 if self.use_chac:
                     SSML_text = re.sub(
-                        "“|【", "</prosody></voice><voice name=\"zh-CN-XiaomoNeural\"><prosody rate=\"30%\" pitch=\"0%\">“", SSML_text)
+                        "“|【", "</prosody></voice><voice name=\"zh-CN-XiaomoNeural\"><prosody rate=\"45%\" pitch=\"0%\">“", SSML_text)
                     SSML_text = re.sub(
-                        "”|】", "</prosody></voice><voice name=\"zh-CN-XiaoXiaoNeural\"><prosody rate=\"30%\" pitch=\"0%\">", SSML_text)
+                        "”|】", "</prosody></voice><voice name=\"zh-CN-XiaoXiaoNeural\"><prosody rate=\"45%\" pitch=\"0%\">", SSML_text)
                 output_path = "read/%s" % (l[i]["title"])
                 logger.debug("Get %03d %s" % (i, l[i]["title"]))
                 bar()
