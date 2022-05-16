@@ -117,16 +117,22 @@ class Main:
             except:
                 if i.exception() is not None:
                     if not is_retry:
-                        logger.error(
-                            "ERROR: Get %d %s Error, added to retry list." % (bgn+id, i.get_name()))
-                        logger.debug(i.exception())
-                        logger.debug(f"bgn: {bgn}, id:{id}")
-                        self.retry.append(self.text[bgn+id])
+                        try:
+                            logger.error(
+                                "ERROR: Get %d %s Error, added to retry list." % (bgn+id, i.get_name()))
+                            logger.debug(i.exception())
+                            logger.debug(f"bgn: {bgn}, id:{id}")
+                            self.retry.append(self.text[bgn+id])
+                        except Exception:
+                            logger.exception("Add retry list error.")
                     else:
-                        logger.error(
-                            "ERROR: Get %d %s Error WHILE RETEYING" % (bgn+id, i.get_name()))
-                        logger.error(i.exception())
-                        logger.debug(f"bgn: {bgn}, id:{id}")
+                        try:
+                            logger.error(
+                                "ERROR: Get %d %s Error WHILE RETEYING" % (bgn+id, i.get_name()))
+                            logger.error(i.exception())
+                            logger.debug(f"bgn: {bgn}, id:{id}")
+                        except Exception:
+                            logger.exception("RETRY Error.")
             bar()
 
     def download_content(self,l,is_retry) -> None:
