@@ -1,7 +1,6 @@
 *.exe
-*.mp3
-info.txt
-error.txt
-debug.txt
+read
+__pycache__
+logs
 DEBUG
 *.conf
