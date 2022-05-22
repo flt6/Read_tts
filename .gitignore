@@ -4,3 +4,4 @@ info.txt
 error.txt
 debug.txt
 DEBUG
+*.conf
