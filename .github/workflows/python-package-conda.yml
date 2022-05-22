@@ -1,0 +1,33 @@
+name: Python Package using Conda
+
+on: [push]
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    strategy:
+      max-parallel: 5
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v3
+      with:
+        python-version: 3.10
+    - name: Add conda to system path
+      run: |
+        # $CONDA is an environment variable pointing to the root of the miniconda directory
+        echo $CONDA/bin >> $GITHUB_PATH
+    - name: Install dependencies
+      run: |
+        pip install nuitka
+        pip install -r requirements.txt
+    - name: build
+      run: |
+        nuitka --follow-imports --include-package-data=websockets --noinclude-IPython-mode=nofollow --standalone --include-data-file="grapheme_break_property.json"=grapheme\data\ --assume-yes-for-downloads --onefile gather.py
+    - name: upload
+      uses: actions/upload-artifact@v3.0.0
+      with:
+        path: gather.exe
+        if-no-files-found: error
+    
