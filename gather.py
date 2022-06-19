@@ -140,6 +140,8 @@ class Main:
         with alive_bar(len(iter)) as bar:
             for i in iter:
                 url = "http://{}/getBookContent".format(self.ip)
+                title = l[i]["title"]
+                title = re.sub(r'''[\*\/\\\|\<\>\? \:\.\'\"\!]''',"",title)
                 try:
                     cha = loads(get(url, params={"url": self.data["url"], "index": str(i)}).text)[
                         "data"]
