@@ -90,8 +90,12 @@ class Main:
 
     def choose_book(self) -> None:
         self.num = int(input("No. "))-1
-        self.bgn = int(input("From(%d: %s): " % (
-            self.books[self.num]["now_idx"], self.books[self.num]["now"])))
+        self.bgn = input("From(%d: %s): " % (
+            self.books[self.num]["now_idx"], self.books[self.num]["now"]))
+        if self.bgn == "":
+            self.bgn = self.books[self.num]["now_idx"]
+        else:
+            self.bgn  =  int(self.bgn)
         self.to = int(input(("To. ")))
         self.data = self.books[self.num]
         logger.debug(f"bgn: {self.bgn} to: {self.to}")
@@ -107,6 +111,7 @@ class Main:
         return task
 
     async def wait(self,bgn,is_retry,bar):
+        # self.
         for id,i in enumerate(self.tasks):
             i:asyncio.Task
             try:
@@ -150,12 +155,12 @@ class Main:
                 except Exception:
                     if not is_retry:
                         logger.error(
-                            "ERROR: Get %d %s from app Error, added to retry list." % (i, l[i]["title"]))
+                            "ERROR: Get %d %s from app Error, added to retry list." % (i, title))
                         logger.debug(format_exc())
                         self.retry.append(i)
                     else:
                         logger.error(
-                            "ERROR: Get %d %s from app Error WHILE RETEYING" % (i, l[i]["title"]),
+                            "ERROR: Get %d %s from app Error WHILE RETEYING" % (i, title),
                             exc_info=True
                         )
                     continue
@@ -165,11 +170,11 @@ class Main:
                         "“|【", "</prosody></voice><voice name=\"zh-CN-XiaomoNeural\"><prosody rate=\"45%\" pitch=\"0%\">“", SSML_text)
                     SSML_text = re.sub(
                         "”|】", "</prosody></voice><voice name=\"zh-CN-XiaoXiaoNeural\"><prosody rate=\"45%\" pitch=\"0%\">", SSML_text)
-                output_path = "read/%s" % (l[i]["title"])
-                logger.debug("Get %03d %s" % (i, l[i]["title"]))
+                output_path = "read/%s" % (title)
+                logger.debug("Get %03d %s" % (i, title))
                 bar()
                 try:
-                    self.text.append(((SSML_text,output_path),l[i]["title"]))
+                    self.text.append(((SSML_text,output_path),title))
                 except:
                     logger.error("Error while adding task to list.")
                     logger.debug("DBG",exc_info=True)
@@ -178,18 +183,20 @@ class Main:
 
     async def download(self, l, is_retry=False) -> None:
         iter=self.retry if is_retry else self.text
+        logger.debug([tmp[1] for tmp in self.retry])
         with alive_bar(len(self.text)+1) as bar:
             for id,((SSML_text,output_path),name) in enumerate(iter):
                 self.tasks.append(
                     self._download(mainSeq(SSML_text, output_path),name)
                 )
                 logger.debug(f"Created task: id={id},name={name}")
-                if id % 10 == 0 and id != 0:
-                    logger.info(f"waiting for group {id//10}(from {id-10} to {id})")
-                    await self.wait(id-10,is_retry,bar)
+                if id % 5 == 0 and id != 0:
+                    logger.info(f"waiting for group {id//5}(from {id-5} to {id})")
+                    await self.wait(id-5,is_retry,bar)
                     self.tasks = []
             logger.info(f"waiting for last group.")
-            await self.wait(l,is_retry,bar)
+            logger.error("TODO: last group.")
+            await self.wait(-1,is_retry,bar)
             bar()
             self.tasks = []
 
