@@ -12,4 +12,4 @@ from sys import exit
 
 
 logger = Log("Main",debug=DEBUG,show=True).get_logger()
-tts.registerLogger(True, DEBUG)
+tts.getLogger(True, DEBUG)
