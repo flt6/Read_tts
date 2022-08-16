@@ -6,10 +6,10 @@ from log import Log
 import re
 from consts import DEBUG,SSML_MODEL
 from os import path,mkdir,system,getpid
-# from tts import mainSeq,getLogger
 import tts
 from sys import exit
+from utils import *
 
 
-logger = Log("Main",debug=DEBUG,show=True).get_logger()
-tts.getLogger(True, DEBUG)
+# logger = Log("Main",debug=DEBUG,show=True).get_logger()
+logger = getLogger("main")

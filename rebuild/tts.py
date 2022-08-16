@@ -8,10 +8,7 @@ import re
 import uuid
 import consts
 
-
-def getLogger(show=True, debug=False):
-    global logger
-    logger = Log(name="TTS", show=show, debug=debug).get_logger()
+logger = Log(name="TTS", show=consts.TO_CONSOLE, debug=consts.DEBUG).get_logger()
 
 # Generate X-Timestamp all correctly formatted
 def getXTime():

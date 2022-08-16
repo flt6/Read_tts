@@ -1,7 +1,7 @@
 from requests import get
 from json import loads
 from traceback import format_exc
-from log import Log
+from logsrc import Log
 import re
 from os import path,mkdir,system
 from tts import mainSeq,getLogger
