@@ -9,14 +9,16 @@ from asyncio import Task, create_task, run, sleep
 from multiprocessing import Process 
 
 from model import Book, ChapterList, Chapter
-from tts import transferMsTTSData
+from tts import tts
 
 from exceptions import ErrorHandler
-from exceptions import ServerError
+from exceptions import ServerError, AppError
 from requests.exceptions import RequestException
+
 
 import consts
 from typing import Union
+from azure.cognitiveservices.speech.speech import ResultFuture
 
 
 def req(url, caller="Requester", logger = None,
@@ -32,7 +34,7 @@ def req(url, caller="Requester", logger = None,
     try:
         json = res.json()
         if json["isSuccess"] == False:
-            raise ServerError(json["errorMsg"]) # type: ignore
+            raise AppError(json["errorMsg"]) # type: ignore
         json = json["data"]
     except Exception as e:
         ErrorHandler(e, caller, logger, level, exit, wait)()
@@ -78,10 +80,9 @@ class ToApp:
             book = Book(**shelf[i])
             if not book.available:
                 self.logger.debug("Book not available")
-                self.logger.debug(book)
                 continue
             if book.idx == 0:
-                self.logger.debug(f"{book}\nNo ChaperIndex.")
+                self.logger.debug(f"No ChaperIndex.")
                 continue
             tip = consts.CHOOSEBOOK % (
                 i+1,
@@ -224,47 +225,42 @@ class ToServer:
             return None
 
     async def _asyncDownload(self, chapters: list[Chapter]):
-        st: list[Task] = []
+        st: list[tuple[ResultFuture,int]] = []
         retry: list[Chapter] = []
         with alive_bar(len(chapters)) as bar:
             for i, chap in enumerate(chapters):
                 opt = self.optDir+'/'+chap.title
-                task = create_task(transferMsTTSData(
-                    chap.content, opt), name=str(i))
+                task = tts(chap.content, opt)
                 self.logger.debug(f"Create task {task}")
-                st.append(task)
+                st.append((task,i))  # type: ignore
                 if len(st) >= 5:
                     self.logger.info("Start async waiting.")
-                    while len(st) >= 5:
-                        await sleep(5)
-                        tem=[]
-                        for j, task in enumerate(st):
-                            ret = await self._chkResult(task)
-                            if ret == False:
-                                id = int(task.get_name())
-                                retry.append(chapters[id])
-                            if ret is None:
-                                tem.append(task)
-                            else:
-                                bar()
-                        st=tem
-                        # 风险：设tem、st均为指针数组，则tem中所有对象均指向st中对象的地址，但是242行
-                        #       将st删除，则现在st中的指针成为野指针。
-                                
+                    for task,j in st:
+                        try:
+                            ret = task.get()
+                            if ret.reason != consts.TTS_SUC:
+                                self.logger.error(ret.reason)
+                                retry.append(chapters[j])
+                        except Exception as e:
+                            ErrorHandler(e,"AsyncReq",self.logger)
+                            retry.append(chapters[j])
+                        bar()
+                    st=[]
                     self.logger.info("End async waiting.")
             self.logger.info("Start last async waiting.")
-            while len(st):
-                await sleep(5)
-                for j, task in enumerate(st):
-                    ret = await self._chkResult(task)
-                    if ret == False:
-                        id = int(task.get_name())
-                        retry.append(chapters[id])
-                    if ret is not None:
-                        bar()
-                        st.pop(j)
-                        break
-            self.logger.info("End last async waiting.")
+            if len(st) >= 5:
+                self.logger.info("Start async waiting.")
+                for task,j in st:
+                    try:
+                        ret = task.get()
+                        if ret.reason != consts.TTS_SUC:
+                            self.logger.error(ret.reason)
+                            retry.append(chapters[j])
+                    except Exception as e:
+                        ErrorHandler(e,"AsyncReq",self.logger)
+                        retry.append(chapters[j])
+                    bar()
+                self.logger.info("End async waiting.")
         return retry
 
     def asyncDownload(self, chapters: list[Chapter]):
@@ -274,7 +270,7 @@ class ToServer:
 def test():
     app = ToApp()
     bk=app.get_shelf()[0]
-    l=app.get_charpter_list(bk)[10:50]
+    l=app.get_charpter_list(bk)[10:20]
     con=app.download_content(l)[0]
     
     t = Trans()
