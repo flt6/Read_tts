@@ -23,5 +23,9 @@ now:    %s
 -----------------
 '''
 
+MAX_RETRY=5
+
+OPT_DIR="Output"
+
 if DEBUG is None:
     DEBUG=path.exists("DEBUG")

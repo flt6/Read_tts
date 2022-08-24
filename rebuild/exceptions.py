@@ -3,8 +3,9 @@ import consts
 
 from requests.exceptions import RequestException
 from json.decoder import JSONDecodeError
+from websockets.exceptions import WebSocketException
 
-from log import Log, getLogger
+from log import getLogger
 from traceback import extract_stack
 
 
@@ -15,6 +16,9 @@ class ServerError(Exception):
                 text to print
         '''
         self.msg = str(message)
+class AppError(ServerError):
+    def __init__(self, message: Any = None):
+        super().__init__(message)
 
 
 class ErrorHandler:
@@ -87,7 +91,9 @@ class ErrorHandler:
     def __call__(self):
         err = self.err
         msg = ""
-        if isinstance(err, ServerError):
+        if isinstance(err, AppError):
+            msg = f"While getting data from APP, the server returned an error: {err.msg}"
+        elif isinstance(err, ServerError):
             msg = int(err.msg)
             if msg == 404:
                 msg = f"Server: 404 at {self.src}"
@@ -108,7 +114,12 @@ class ErrorHandler:
             msg = "File exists!"+err.args[0]
         elif self.src == "AsyncReq":
             msg =  "Async request error!\n"
-            msg += str(err)
+            if isinstance(err, WebSocketException):
+                msg+=f"WebSocket Error: {err}"
+            else:
+                msg+="Unknown error\n"
+                msg += str(type(err))+":"
+                msg += str(err)
         else:
             msg = "Unknown error!"
             self.level = 2

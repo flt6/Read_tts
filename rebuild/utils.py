@@ -1,10 +1,12 @@
 from requests import get
-from log import getLogger, Log
+from log import getLogger
 from os.path import isfile, isdir
 from os import mkdir
 from re import match, sub
 from alive_progress import alive_bar
 from asyncio import Task, create_task, run, sleep
+# TODO: multiprocessing
+from multiprocessing import Process 
 
 from model import Book, ChapterList, Chapter
 from tts import transferMsTTSData
@@ -28,7 +30,10 @@ def req(url, caller="Requester", logger = None,
         ErrorHandler(e, caller, logger, level, exit, wait)()
         return None
     try:
-        json = res.json()["data"]
+        json = res.json()
+        if json["isSuccess"] == False:
+            raise ServerError(json["errorMsg"]) # type: ignore
+        json = json["data"]
     except Exception as e:
         ErrorHandler(e, caller, logger, level, exit, wait)()
         return None
@@ -194,7 +199,7 @@ class Trans:
 
 
 class ToServer:
-    def __init__(self, optDir="Output"):
+    def __init__(self, optDir):
         self.logger = getLogger("ToServer")
         self.optDir = optDir
         self.createdir()
@@ -221,41 +226,45 @@ class ToServer:
     async def _asyncDownload(self, chapters: list[Chapter]):
         st: list[Task] = []
         retry: list[Chapter] = []
-        for i, chap in enumerate(chapters):
-            opt = self.optDir+'/'+chap.title
-            task = create_task(transferMsTTSData(
-                chap.content, opt), name=str(i))
-            self.logger.debug(f"Create task {task}")
-            st.append(task)
-            if len(st) >= 5:
-                self.logger.info("Start async waiting.")
-                while len(st) >= 5:
-                    await sleep(5)
-                    tem=[]
-                    for j, task in enumerate(st):
-                        ret = await self._chkResult(task)
-                        if ret == False:
-                            id = int(task.get_name())
-                            retry.append(chapters[id])
-                        if ret is None:
-                            tem.append(task)
-                    st=tem
-                    # 风险：设tem、st均为指针数组，则tem中所有对象均指向st中对象的地址，但是242行
-                    #       将st删除，则现在st中的指针成为野指针。
-                            
-                self.logger.info("End async waiting.")
-        self.logger.info("Start last async waiting.")
-        while len(st):
-            await sleep(5)
-            for j, task in enumerate(st):
-                ret = await self._chkResult(task)
-                if ret == False:
-                    id = int(task.get_name())
-                    retry.append(chapters[id])
-                if ret is not None:
-                    st.pop(j)
-                    break
-        self.logger.info("End last async waiting.")
+        with alive_bar(len(chapters)) as bar:
+            for i, chap in enumerate(chapters):
+                opt = self.optDir+'/'+chap.title
+                task = create_task(transferMsTTSData(
+                    chap.content, opt), name=str(i))
+                self.logger.debug(f"Create task {task}")
+                st.append(task)
+                if len(st) >= 5:
+                    self.logger.info("Start async waiting.")
+                    while len(st) >= 5:
+                        await sleep(5)
+                        tem=[]
+                        for j, task in enumerate(st):
+                            ret = await self._chkResult(task)
+                            if ret == False:
+                                id = int(task.get_name())
+                                retry.append(chapters[id])
+                            if ret is None:
+                                tem.append(task)
+                            else:
+                                bar()
+                        st=tem
+                        # 风险：设tem、st均为指针数组，则tem中所有对象均指向st中对象的地址，但是242行
+                        #       将st删除，则现在st中的指针成为野指针。
+                                
+                    self.logger.info("End async waiting.")
+            self.logger.info("Start last async waiting.")
+            while len(st):
+                await sleep(5)
+                for j, task in enumerate(st):
+                    ret = await self._chkResult(task)
+                    if ret == False:
+                        id = int(task.get_name())
+                        retry.append(chapters[id])
+                    if ret is not None:
+                        bar()
+                        st.pop(j)
+                        break
+            self.logger.info("End last async waiting.")
         return retry
 
     def asyncDownload(self, chapters: list[Chapter]):
@@ -272,7 +281,7 @@ def test():
     for i in con:
         i = t(i)
     print(con)
-    ser = ToServer()
+    ser = ToServer("Output")
     ser.asyncDownload(con)
 
 
