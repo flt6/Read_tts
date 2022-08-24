@@ -74,16 +74,16 @@ class Log(Logger):
     def gen_handle(self) -> None:
         # fmt = Formatter("%(asctime)s - %(levelname)s - %(funcName)s: %(message)s")
         fmt = Formatter(
-            "%(asctime)s - %(name)s - %(levelname)8s: %(message)s")
+            "%(asctime)s - %(levelname)8s - %(name)s: %(message)s")
 
-        self.info_handle = FileHandler("logs/info.txt")
+        self.info_handle = FileHandler("logs/info.log")
         self.info_handle.setLevel(INFO)
         self.info_handle.setFormatter(fmt)
-        self.error_handle = FileHandler("logs/error.txt")
+        self.error_handle = FileHandler("logs/error.log")
         self.error_handle.setLevel(ERROR)
         self.error_handle.setFormatter(fmt)
         if self.isdebug:
-            self.debug_handle = FileHandler("logs/debug.txt")
+            self.debug_handle = FileHandler("logs/debug.log")
             self.debug_handle.setLevel(DEBUG)
             self.debug_handle.setFormatter(fmt)
 
@@ -104,6 +104,8 @@ class Log(Logger):
         try:
             1/0
         except Exception as e:
+            super()._log(40,"Test Source",(),exc_info=True)
+            # raise e
             self.exception("Test Exception")
 
 def getLogger(name: str = "Default") -> Log:

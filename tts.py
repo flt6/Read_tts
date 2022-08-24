@@ -2,7 +2,7 @@
 # A completely innocent attempt to borrow proprietary Microsoft technology for a much better TTS experience
 import requests
 import websockets
-from log import Log
+from logsrc import Log
 import asyncio
 from datetime import datetime
 import time

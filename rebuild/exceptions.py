@@ -20,7 +20,7 @@ class ServerError(Exception):
 class ErrorHandler:
     def __init__(
         self, err, src: str = "Unknown", 
-        logger: Log = None, level: int = 1,
+        logger = None, level: int = 1,
         exit=False, wait=False
         ):
         '''
@@ -74,11 +74,17 @@ class ErrorHandler:
         if self.dbg:
             self.lgdbg('', exc_info=True)
 
-    def getStack(self) -> str:
+    def getStack(self):
         st = extract_stack()
         return st[-4].name
 
-    def __call__(self) -> Any:
+    def quit(self):
+        if self.exit:
+            if self.wait:
+                input("Pause (input enter to exit)")
+            exit(1)
+
+    def __call__(self):
         err = self.err
         msg = ""
         if isinstance(err, ServerError):
@@ -98,12 +104,36 @@ class ErrorHandler:
             self.wait=False
         elif isinstance(err, PermissionError):
             msg = "Permission denied!"
+        elif isinstance(err,FileExistsError):
+            msg = "File exists!"+err.args[0]
+        elif self.src == "AsyncReq":
+            msg =  "Async request error!\n"
+            msg += str(err)
         else:
             msg = "Unknown error!"
             self.level = 2
             self.dbg = True
+            # raise err
         self.show(msg)
-        if self.exit:
-            if self.wait:
-                input("Pause (input enter to exit)")
-            exit(1)
+        self.quit()
+
+class Test:
+    def g(self):
+        e=PermissionError("Test permissionError")
+        ErrorHandler(e,"Test1")()
+        ErrorHandler(e,"Test2",level=2)()
+        try:
+            1/0
+        except Exception as e:
+            ErrorHandler(e,"Test unknown error",level=3)()
+            ErrorHandler(e,"exit",exit=True,wait=True)()
+            print("This shouldn't be printed.")
+    def f(self):
+        self.g()
+    def __call__(self):
+        print(isinstance(ServerError(),BaseException))
+        self.f()
+    
+
+if __name__ == "__main__":
+    Test()()

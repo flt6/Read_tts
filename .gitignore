@@ -1,6 +1,7 @@
 *.exe
-read
+Output
 __pycache__
 logs
 DEBUG
 *.conf
+*.mp3
