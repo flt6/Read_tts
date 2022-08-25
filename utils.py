@@ -4,9 +4,8 @@ from os.path import isfile, isdir
 from os import mkdir
 from re import match, sub
 from alive_progress import alive_bar
-from asyncio import Task, create_task, run, sleep
 # TODO: multiprocessing
-from multiprocessing import Process 
+from multiprocessing import Process
 
 from model import Book, ChapterList, Chapter
 from tts import tts
@@ -21,8 +20,8 @@ from typing import Union
 from azure.cognitiveservices.speech.speech import ResultFuture
 
 
-def req(url, caller="Requester", logger = None,
-        level = 1, exit=False, wait=False):
+def req(url, caller="Requester", logger=None,
+        level=1, exit=False, wait=False):
     getLogger("request").debug("url=%s,caller=%s" % (url, caller))
     try:
         res = get(url)
@@ -34,7 +33,7 @@ def req(url, caller="Requester", logger = None,
     try:
         json = res.json()
         if json["isSuccess"] == False:
-            raise AppError(json["errorMsg"]) # type: ignore
+            raise AppError(json["errorMsg"])  # type: ignore
         json = json["data"]
     except Exception as e:
         ErrorHandler(e, caller, logger, level, exit, wait)()
@@ -153,7 +152,6 @@ class ToApp:
                         return
             except Exception as e:
                 ErrorHandler(e, "ToApp", self.logger)()
-            
             self.logger.debug("_testIP() returned False")
         while True:
             ip = input("ip: ")
@@ -210,76 +208,77 @@ class ToServer:
         if not isdir(self.optDir):
             mkdir(self.optDir)
 
-    async def _chkResult(self, task: Task) -> Union[bool, None]:
-        if task.done():
-            e = task.exception()
-            if e is None:
-                self.logger.debug(f"_chkResult: {task.get_name()} success")
-                await task
-                return True
-            else:
-                self.logger.debug(f"_chkResult: {task.get_name()} failed.")
-                ErrorHandler(e, "AsyncReq", self.logger)()
-                return False
-        else:
-            return None
-
-    async def _asyncDownload(self, chapters: list[Chapter]):
-        st: list[tuple[ResultFuture,int]] = []
+    def asyncDownload(self, chapters: list[Chapter]):
+        st: list[tuple[ResultFuture, int]] = []
         retry: list[Chapter] = []
         with alive_bar(len(chapters)) as bar:
             for i, chap in enumerate(chapters):
                 opt = self.optDir+'/'+chap.title
                 task = tts(chap.content, opt)
                 self.logger.debug(f"Create task {task}")
-                st.append((task,i))  # type: ignore
+                st.append((task, i))  # type: ignore
                 if len(st) >= 5:
                     self.logger.info("Start async waiting.")
-                    for task,j in st:
+                    for task, j in st:
                         try:
                             ret = task.get()
                             if ret.reason != consts.TTS_SUC:
                                 self.logger.error(ret.reason)
                                 retry.append(chapters[j])
                         except Exception as e:
-                            ErrorHandler(e,"AsyncReq",self.logger)
+                            ErrorHandler(e, "AsyncReq", self.logger)
                             retry.append(chapters[j])
                         bar()
-                    st=[]
+                    st = []
                     self.logger.info("End async waiting.")
             self.logger.info("Start last async waiting.")
             if len(st) >= 5:
                 self.logger.info("Start async waiting.")
-                for task,j in st:
+                for task, j in st:
                     try:
                         ret = task.get()
                         if ret.reason != consts.TTS_SUC:
                             self.logger.error(ret.reason)
                             retry.append(chapters[j])
                     except Exception as e:
-                        ErrorHandler(e,"AsyncReq",self.logger)
+                        ErrorHandler(e, "AsyncReq", self.logger)
                         retry.append(chapters[j])
                     bar()
                 self.logger.info("End async waiting.")
         return retry
 
-    def asyncDownload(self, chapters: list[Chapter]):
-        return run(self._asyncDownload(chapters))
 
-
-def test():
+def test_app():
+    print("Before this test, you should set ip in `ip.conf`")
     app = ToApp()
-    bk=app.get_shelf()[0]
-    l=app.get_charpter_list(bk)[10:20]
-    con=app.download_content(l)[0]
-    
+    bk = app.get_shelf()[0]
+    l = app.get_charpter_list(bk)[0:5]
+    con = app.download_content(l)[0]
+    print(con)
+
+def test_trans():
+    con = [
+        Chapter(0, "Test title 0", 'Content text 0'),
+        Chapter(1, "Test title 1", 'Content text 1')
+    ]
+    rst=[
+        '<speak xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="http://www.w3.org/2001/mstts" xmlns:emo="http://www.w3.org/2009/10/emotionml" version="1.0" xml:lang="en-US">\n    <voice name="zh-CN-XiaoxiaoNeural">\n        <prosody rate="43%" pitch="0%">\n            Content text 0\n        </prosody>\n    </voice>\n</speak>',
+        '<speak xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="http://www.w3.org/2001/mstts" xmlns:emo="http://www.w3.org/2009/10/emotionml" version="1.0" xml:lang="en-US">\n    <voice name="zh-CN-XiaoxiaoNeural">\n        <prosody rate="43%" pitch="0%">\n            Content text 1\n        </prosody>\n    </voice>\n</speak>'
+    ]
     t = Trans()
     for i in con:
         i = t(i)
-    print(con)
+    for i in range(len(con)):
+        assert con[i].content == rst[i]
+
+def test_tts():
+    con = [
+        Chapter(0, "Test title 0", '<speak xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="http://www.w3.org/2001/mstts" xmlns:emo="http://www.w3.org/2009/10/emotionml" version="1.0" xml:lang="en-US"><voice name="zh-CN-XiaoxiaoNeural"><prosody rate="43%" pitch="0%">Content text 0</prosody></voice></speak>'),
+        Chapter(1, "Test title 1", '<speak xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="http://www.w3.org/2001/mstts" xmlns:emo="http://www.w3.org/2009/10/emotionml" version="1.0" xml:lang="en-US"><voice name="zh-CN-XiaoxiaoNeural"><prosody rate="43%" pitch="0%">Content text 1</prosody></voice></speak>')
+    ]
     ser = ToServer("Output")
     ser.asyncDownload(con)
 
 
 if __name__ == '__main__':
-    print(test())
+    test_trans()
