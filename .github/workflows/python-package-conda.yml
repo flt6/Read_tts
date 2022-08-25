@@ -5,6 +5,9 @@ on: [push]
 jobs:
   build-windows:
     runs-on: windows-latest
+    env:
+      ylogin: ${{ secrets.LANZOU_ID }}
+      phpdisk_info: ${{ secrets.LANZOU_PSD }}
     strategy:
       max-parallel: 5
 
@@ -28,6 +31,9 @@ jobs:
     - name: upload
       uses: actions/upload-artifact@v3.0.0
       with:
-        path: gather.exe
+        path: main.exe
         if-no-files-found: error
+    - name: upload to lanzou
+      run: |
+        python3 $GITHUB_WORKSPACE/.github/script/lzy.py
     
