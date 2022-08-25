@@ -27,7 +27,7 @@ jobs:
         pip install -r requirements.txt
     - name: build
       run: |
-        nuitka --follow-imports --include-package-data=websockets --noinclude-IPython-mode=nofollow --standalone --include-data-file="grapheme_break_property.json"=grapheme\data\ --assume-yes-for-downloads --onefile gather.py
+        nuitka --follow-imports --include-package-data=websockets --noinclude-IPython-mode=nofollow --standalone --include-data-file="grapheme_break_property.json"=grapheme\data\ --assume-yes-for-downloads --onefile main.py
     - name: upload
       uses: actions/upload-artifact@v3.0.0
       with:
