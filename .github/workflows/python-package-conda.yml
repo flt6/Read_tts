@@ -35,5 +35,5 @@ jobs:
         if-no-files-found: error
     - name: upload to lanzou
       run: |
-        python3 $GITHUB_WORKSPACE/.github/script/lzy.py
+        python3 .github/script/lzy.py
     
