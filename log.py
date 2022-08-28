@@ -108,7 +108,7 @@ class Log(Logger):
             # raise e
             self.exception("Test Exception")
 
-def getLogger(name: str = "Default") -> Log:
+def getLogger(name: str = "Default") -> Logger:
     return Log(name=name, show=consts.TO_CONSOLE, debug=consts.DEBUG).get_logger()
 
 
