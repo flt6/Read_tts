@@ -114,12 +114,13 @@ class ErrorHandler:
             msg = "File exists!"+err.args[0]
         elif self.src == "AsyncReq":
             msg =  "Async request error!\n"
-            if isinstance(err, WebSocketException):
-                msg+=f"WebSocket Error: {err}"
+            if isinstance(err, RuntimeError):
+                msg+=f"RE: {err}"
             else:
                 msg+="Unknown error\n"
                 msg += str(type(err))+":"
                 msg += str(err)
+            
         else:
             msg = "Unknown error!"
             self.level = 2

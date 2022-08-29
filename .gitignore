@@ -5,3 +5,4 @@ logs
 DEBUG
 *.conf
 *.mp3
+.vscode
