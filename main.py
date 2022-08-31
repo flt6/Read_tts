@@ -55,7 +55,7 @@ class Main:
         logger.info("tts completed.")
     def merge(self,chaps:list[Chapter]):
         logger.info("Start merge mp3")
-        merge(chaps,False)
+        merge(chaps,True)
         logger.info("merge completed.")
     def __call__(self):
         chaps=self.dealApp()

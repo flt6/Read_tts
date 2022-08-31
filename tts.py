@@ -16,5 +16,5 @@ def init():
 def tts(ssml:str,path:str):
     if provider is None:
         init()
-    opt=AudioOutputConfig(filename=path+".mp3")
+    opt=AudioOutputConfig(filename=path)
     return ssml_to_speech(provider,opt,ssml,fmt,True)  # type: ignore

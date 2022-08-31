@@ -193,7 +193,7 @@ class Trans:
         while i<totLines:
             tem=""
             getLogger("DEBUG").debug(f"i={i} totLines={totLines}")
-            while len(tem)<4000 and i<totLines:
+            while len(tem)<2500 and i<totLines:
                 tem+=lines[i]
                 tem+="\n"
                 i+=1
@@ -211,7 +211,7 @@ class Trans:
             title=self.title(chap)
             content=self.content_basic(chap)
             for i,t in enumerate(content):
-                opt.append(Chapter(chap.idx,title+f" ({i})",t,i))
+                opt.append(Chapter(chap.idx,title+f" ({i}).mp3",t,i))
             return opt
 
 class ToServer:
@@ -243,6 +243,8 @@ class ToServer:
                             if ret.reason != consts.TTS_SUC:
                                 self.logger.error(ret.reason)
                                 self.logger.error(ret.cancellation_details)
+                                self.logger.debug(chapters[j].idx)
+                                self.logger.debug("SSML Text: " + chapters[j].content)
                                 retry.append(chapters[j])
                         except Exception as e:
                             ErrorHandler(e, "AsyncReq", self.logger)
@@ -267,8 +269,9 @@ class ToServer:
         return retry
 
 def _merge(logger,ch,name,is_remove):
+    optDir=consts.OPT_DIR
     logger.debug(f"Start merging '{name}'")
-    paths=[i.title for i in ch]
+    paths=[optDir+"/"+i.title for i in ch]
     cmd=[
         'ffmpeg',
         '-i',
@@ -276,7 +279,7 @@ def _merge(logger,ch,name,is_remove):
         '-c',
         'copy',
         '-y',
-        name.replace(" (0).mp3",".mp3")
+        optDir+"/"+name.replace(" (0).mp3",".mp3")
     ]
     try:
         ret=run(cmd)

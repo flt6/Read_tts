@@ -127,24 +127,3 @@ class ErrorHandler:
             # raise err
         self.show(msg)
         self.quit()
-
-class Test:
-    def g(self):
-        e=PermissionError("Test permissionError")
-        ErrorHandler(e,"Test1")()
-        ErrorHandler(e,"Test2",level=2)()
-        try:
-            1/0
-        except Exception as e:
-            ErrorHandler(e,"Test unknown error",level=3)()
-            ErrorHandler(e,"exit",exit=True,wait=True)()
-            print("This shouldn't be printed.")
-    def f(self):
-        self.g()
-    def __call__(self):
-        print(isinstance(ServerError(),BaseException))
-        self.f()
-    
-
-if __name__ == "__main__":
-    Test()()
