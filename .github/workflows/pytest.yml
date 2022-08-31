@@ -9,5 +9,11 @@ jobs:
       max-parallel: 5
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v2.4.2
+        
+      - name: Setup Python
+        uses: actions/setup-python@v4.2.0
+        
       - name: actions-pytest
         uses: xoviat/actions-pytest@0.1-alpha2
