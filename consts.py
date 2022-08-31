@@ -1,5 +1,5 @@
 from os import path
-from azure.cognitiveservices.speech import ResultReason
+from azure.cognitiveservices.speech import ResultReason  # type: ignore
 
 DEBUG = True
 TO_CONSOLE = True

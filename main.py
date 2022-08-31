@@ -1,6 +1,6 @@
 from log import getLogger
 from consts import MAX_RETRY,OPT_DIR
-from utils import ToApp,ToServer,Trans
+from utils import ToApp,ToServer,Trans,merge
 from model import Chapter
 
 
@@ -34,10 +34,11 @@ class Main:
         return chaps
     def textTrans(self,chaps:list[Chapter]):
         logger.info("Trans start.")
+        tem=[]
         for chap in chaps:
-            chap=self.trans(chap)
+            tem.extend(self.trans(chap))
         logger.info("Trans completed.")
-        return chaps
+        return tem
     def tts(self,chaps:list[Chapter]):
         logger.info("tts request started.")
         retry=self.ser.asyncDownload(chaps)
@@ -52,10 +53,15 @@ class Main:
                 logger.error(retry)
                 break
         logger.info("tts completed.")
+    def merge(self,chaps:list[Chapter]):
+        logger.info("Start merge mp3")
+        merge(chaps,False)
+        logger.info("merge completed.")
     def __call__(self):
         chaps=self.dealApp()
         chaps=self.textTrans(chaps)
         self.tts(chaps)
+        self.merge(chaps)
 
 if __name__ == '__main__':
     main=Main(1,OPT_DIR)

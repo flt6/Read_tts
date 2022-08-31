@@ -17,6 +17,7 @@ class Log(Logger):
                 "There is a file named 'logs', which is the same as the log directory."
             )
         self.show = show
+        self.super=super()
         self.gen_handle()
         self.register_handles()
 
@@ -93,25 +94,9 @@ class Log(Logger):
         if self.isdebug:
             self.addHandler(self.debug_handle)
 
-    def get_logger(self) -> Logger:
+    def get_logger(self):
         return self
 
-    def test(self):
-        self.debug("Test")
-        self.info("Test")
-        self.error("Test")
-        self.critical("Test")
-        try:
-            1/0
-        except Exception as e:
-            super()._log(40,"Test Source",(),exc_info=True)
-            # raise e
-            self.exception("Test Exception")
 
-def getLogger(name: str = "Default") -> Logger:
+def getLogger(name: str = "Default") -> Log:
     return Log(name=name, show=consts.TO_CONSOLE, debug=consts.DEBUG).get_logger()
-
-
-if __name__ == '__main__':
-    log = Log("Test", True, True)
-    log.test()

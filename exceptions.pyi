@@ -1,13 +1,13 @@
 from typing import Union,Any
-from log import Log
+from log import Logger
 
-class ServerError:
-    def __init__(self, message: Any):...
+class ServerError:...
+class AppError(ServerError):...
 
 class ErrorHandler:
     def __init__(
         self, err, src: str, 
-        logger: Union[Log,None] = None, 
+        logger: Union[Logger,None] = None, 
         level: int = 1,
         exit=False, wait=False
         ):...

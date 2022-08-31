@@ -3,7 +3,6 @@ import consts
 
 from requests.exceptions import RequestException
 from json.decoder import JSONDecodeError
-from websockets.exceptions import WebSocketException
 
 from log import getLogger
 from traceback import extract_stack

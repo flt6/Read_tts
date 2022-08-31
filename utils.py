@@ -1,11 +1,12 @@
 from requests import get
 from log import getLogger
 from os.path import isfile, isdir
-from os import mkdir
+from os import mkdir,remove
 from re import match, sub
 from alive_progress import alive_bar
 # TODO: multiprocessing
 from multiprocessing import Process
+from subprocess import run
 
 from model import Book, ChapterList, Chapter
 from tts import tts
@@ -184,18 +185,34 @@ class Trans:
         self.type = type
 
     def content_basic(self, chap: Chapter):
-        chap.content = consts.SSML_MODEL.format(chap.content)
-        return chap
+        con=chap.content
+        lines=con.splitlines()
+        totLines=len(lines)
+        content=[]
+        i=0
+        while i<totLines:
+            tem=""
+            getLogger("DEBUG").debug(f"i={i} totLines={totLines}")
+            while len(tem)<4000 and i<totLines:
+                tem+=lines[i]
+                tem+="\n"
+                i+=1
+            content.append(consts.SSML_MODEL.format(tem))
+        return content
 
     def title(self, chap: Chapter):
-        chap.title = sub(r'''[\*\/\\\|\<\>\? \:\.\'\"\!]''', "", chap.title)
-        chap.title = str(chap.idx)+"_"+chap.title
-        return chap
+        title = sub(r'''[\*\/\\\|\<\>\? \:\.\'\"\!]''', "", chap.title)
+        title = str(chap.idx)+"_"+chap.title
+        return title
 
     def __call__(self, chap: Chapter):
         if self.type == 1:
-            return self.title(self.content_basic(chap))
-
+            opt:list[Chapter] = []
+            title=self.title(chap)
+            content=self.content_basic(chap)
+            for i,t in enumerate(content):
+                opt.append(Chapter(chap.idx,title+f" ({i})",t,i))
+            return opt
 
 class ToServer:
     def __init__(self, optDir):
@@ -222,8 +239,10 @@ class ToServer:
                     for task, j in st:
                         try:
                             ret = task.get()
+                            self.logger.debug("audio_duration="+str(ret.audio_duration))
                             if ret.reason != consts.TTS_SUC:
                                 self.logger.error(ret.reason)
+                                self.logger.error(ret.cancellation_details)
                                 retry.append(chapters[j])
                         except Exception as e:
                             ErrorHandler(e, "AsyncReq", self.logger)
@@ -247,38 +266,48 @@ class ToServer:
                 self.logger.info("End async waiting.")
         return retry
 
-
-def test_app():
-    print("Before this test, you should set ip in `ip.conf`")
-    app = ToApp()
-    bk = app.get_shelf()[0]
-    l = app.get_charpter_list(bk)[0:5]
-    con = app.download_content(l)[0]
-    print(con)
-
-def test_trans():
-    con = [
-        Chapter(0, "Test title 0", 'Content text 0'),
-        Chapter(1, "Test title 1", 'Content text 1')
+def _merge(logger,ch,name,is_remove):
+    logger.debug(f"Start merging '{name}'")
+    paths=[i.title for i in ch]
+    cmd=[
+        'ffmpeg',
+        '-i',
+        f'concat:{"|".join(paths)}',
+        '-c',
+        'copy',
+        '-y',
+        name.replace(" (0).mp3",".mp3")
     ]
-    rst=[
-        '<speak xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="http://www.w3.org/2001/mstts" xmlns:emo="http://www.w3.org/2009/10/emotionml" version="1.0" xml:lang="en-US">\n    <voice name="zh-CN-XiaoxiaoNeural">\n        <prosody rate="43%" pitch="0%">\n            Content text 0\n        </prosody>\n    </voice>\n</speak>',
-        '<speak xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="http://www.w3.org/2001/mstts" xmlns:emo="http://www.w3.org/2009/10/emotionml" version="1.0" xml:lang="en-US">\n    <voice name="zh-CN-XiaoxiaoNeural">\n        <prosody rate="43%" pitch="0%">\n            Content text 1\n        </prosody>\n    </voice>\n</speak>'
-    ]
-    t = Trans()
-    for i in con:
-        i = t(i)
-    for i in range(len(con)):
-        assert con[i].content == rst[i]
+    try:
+        ret=run(cmd)
+        if ret.returncode != 0:
+            logger.error("Error occurred while merging. code=%d"%ret.returncode)
+        else:
+            if is_remove:
+                for path in paths:
+                    try:
+                        remove(path)
+                    except Exception as e:
+                        ErrorHandler(e,"Remove",logger)()
+    except Exception as e:
+        ErrorHandler(e, "merge",logger)()
 
-def test_tts():
-    con = [
-        Chapter(0, "Test title 0", '<speak xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="http://www.w3.org/2001/mstts" xmlns:emo="http://www.w3.org/2009/10/emotionml" version="1.0" xml:lang="en-US"><voice name="zh-CN-XiaoxiaoNeural"><prosody rate="43%" pitch="0%">Content text 0</prosody></voice></speak>'),
-        Chapter(1, "Test title 1", '<speak xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="http://www.w3.org/2001/mstts" xmlns:emo="http://www.w3.org/2009/10/emotionml" version="1.0" xml:lang="en-US"><voice name="zh-CN-XiaoxiaoNeural"><prosody rate="43%" pitch="0%">Content text 1</prosody></voice></speak>')
-    ]
-    ser = ToServer("Output")
-    ser.asyncDownload(con)
-
-
-if __name__ == '__main__':
-    test_trans()
+def merge(chapters:list[Chapter],is_remove=True):
+    logger = getLogger("Merge")
+    ch=[]
+    idx=-1
+    name=""
+    for chap in chapters:
+        if chap.idx == idx:
+            ch.append(chap)
+        else:
+            if ch==[]:
+                idx=chap.idx
+                name=chap.title
+                ch=[chap]
+                continue
+            _merge(logger,ch,name,is_remove)
+            idx=chap.idx
+            name=chap.title
+            ch=[chap]
+    _merge(logger,ch,name,is_remove)

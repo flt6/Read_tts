@@ -1,5 +1,5 @@
 # from requests import get
-from typing import Optional, List
+from typing import Optional, List, Union
 
 class Book:
     author: str
@@ -50,17 +50,18 @@ class ChapterList:
         self.dict=kwargs
 
 class Chapter:
-    '章节数'
     idx: int
-    '标题'
+    '章节数'
     title: str
-    '内容'
+    '标题'
     content: str
+    '内容'
 
-    def __init__(self,  index: int,title: str, content: str,**kwargs) -> None:
+    def __init__(self,  index: int,title: str, content: str,spl:int=-1,**kwargs) -> None:
         self.idx = index
         self.title = title
         self.content = content
+        self.spl = spl
         self.dict=kwargs
 
     def __repr__(self):
