@@ -39,6 +39,9 @@ def test_TTS():
 class TestUtils:
     def test_app(self):
         print("Before this test, you should set ip in `ip.conf`")
+        if not isfile("ip.conf"):
+            print("You should set ip in `ip.conf`.")
+            return
         app = ToApp()
         bk = app.get_shelf()[0]
         l = app.get_charpter_list(bk)[0:5]

@@ -1,6 +1,6 @@
-name: Python Package using Conda
+name: Build execute file
 
-on: [push]
+on: [release]
 
 jobs:
   build-windows:

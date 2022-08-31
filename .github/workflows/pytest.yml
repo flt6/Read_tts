@@ -1,0 +1,13 @@
+name: Pytest
+
+on: [push]
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    strategy:
+      max-parallel: 5
+
+    steps:
+      - name: actions-pytest
+        uses: xoviat/actions-pytest@0.1-alpha2
