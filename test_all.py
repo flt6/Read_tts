@@ -59,6 +59,8 @@ class TestUtils:
         l: list[Chapter] = []
         for i in con:
             l.extend(t(i))
+        ser = ToServer("Output")
+        ser.asyncDownload(l)
         assert l[0].content == rst
         assert len(l[1].content) < 3000
 
@@ -66,7 +68,7 @@ class TestUtils:
     def test_tts(self):
         con = [
             Chapter(0, "Test title 0", '<speak xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="http://www.w3.org/2001/mstts" xmlns:emo="http://www.w3.org/2009/10/emotionml" version="1.0" xml:lang="en-US"><voice name="zh-CN-XiaoxiaoNeural"><prosody rate="43%" pitch="0%">Content text 0</prosody></voice></speak>'),
-            Chapter(1, "Test title 1", '<speak xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="http://www.w3.org/2001/mstts" xmlns:emo="http://www.w3.org/2009/10/emotionml" version="1.0" xml:lang="en-US"><voice name="zh-CN-XiaoxiaoNeural"><prosody rate="43%" pitch="0%">Content text 1</prosody></voice></speak>')
+            Chapter(1, "Test title 1.mp3", '<speak xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="http://www.w3.org/2001/mstts" xmlns:emo="http://www.w3.org/2009/10/emotionml" version="1.0" xml:lang="en-US"><voice name="zh-CN-XiaoxiaoNeural"><prosody rate="43%" pitch="0%">'+"甲"*1500+'</prosody></voice></speak>')
         ]
         ser = ToServer("Output")
         ser.asyncDownload(con)

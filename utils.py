@@ -1,4 +1,5 @@
 from requests import get
+from requests.utils import quote  # type: ignore
 from log import getLogger
 from os.path import isfile, isdir
 from os import mkdir,remove
@@ -17,14 +18,17 @@ from requests.exceptions import RequestException
 
 
 import consts
-from typing import Union
+from typing import Any,TypeVar
 from azure.cognitiveservices.speech.speech import ResultFuture
 
 
-def req(url, caller="Requester", logger=None,
+def req(param:tuple[str,list[Any]], caller="Requester", logger=None,
         level=1, exit=False, wait=False):
-    getLogger("request").debug("url=%s,caller=%s" % (url, caller))
+    getLogger("request").debug("param=%s,caller=%s" % (param, caller))
     try:
+        url,args = param
+        url = url.format(args[0],*[quote(str(i)) for i in args[1:]])
+        getLogger("request").debug("url=%s"%url)
         res = get(url)
         if res.status_code != 200:
             raise ServerError(res.status_code)  # type: ignore
@@ -73,8 +77,8 @@ class ToApp:
             Get the shelf infomation from the app.
             @return: Is succeeded.
         '''
-        url = consts.GET_SHELF.format(self.ip)
-        shelf: dict = req(url, 'ToApp', level=2, exit=True, wait=True)
+        url = consts.GET_SHELF
+        shelf: dict = req((url,[self.ip]), 'ToApp', level=2, exit=True, wait=True)  # type: ignore
         books = []
         for i in range(len(shelf)):
             book = Book(**shelf[i])
@@ -107,9 +111,11 @@ class ToApp:
         book = books[num]
         return (bgn, to, book)
 
-    def get_charpter_list(self, book: Book) -> list[ChapterList]:
-        url = consts.GET_CHAPTER_LIST.format(self.ip, book.url)
-        chapters = req(url, "ToApp", level=2, exit=True, wait=True)
+    def get_charpter_list(self, book: Book):
+        url = consts.GET_CHAPTER_LIST
+        chapters = req((url,[self.ip, book.url]), "ToApp", level=2, exit=True, wait=True)
+        if chapters is None:
+            return
         return [ChapterList(**item, book=book.url) for item in chapters]
 
     def download_content(self, chapters: list[ChapterList]):
@@ -117,8 +123,8 @@ class ToApp:
         con = []
         with alive_bar(len(chapters)) as bar:
             for ch in chapters:
-                url = consts.GET_CONTENT.format(self.ip, ch.url, ch.idx)
-                res = req(url, "ToApp")
+                url = consts.GET_CONTENT
+                res = req((url,[self.ip, ch.url, ch.idx]), "ToApp")
                 bar()
                 if res is None:
                     retry.append(ch)
@@ -193,7 +199,7 @@ class Trans:
         while i<totLines:
             tem=""
             getLogger("DEBUG").debug(f"i={i} totLines={totLines}")
-            while len(tem)<2500 and i<totLines:
+            while len(tem)<1500 and i<totLines:
                 tem+=lines[i]
                 tem+="\n"
                 i+=1

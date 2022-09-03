@@ -2,6 +2,7 @@ from log import getLogger
 from consts import MAX_RETRY,OPT_DIR
 from utils import ToApp,ToServer,Trans,merge
 from model import Chapter
+from exceptions import ErrorHandler
 
 
 logger = getLogger("Main")
