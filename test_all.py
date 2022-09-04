@@ -10,21 +10,10 @@ import consts
 import pytest
 
 
-def test_log():
-    log = getLogger("Test")
-    log.debug("Test")
-    log.info("Test")
-    log.error("Test")
-    log.critical("Test")
-    try:
-        1/0
-    except Exception as e:
-        log.super._log(40, "Test Source", (), exc_info=True)
-        log.exception("Test Exception")
-
 @pytest.fixture()
 def cleanup():
     yield None
+    remove("output.mp3")
     remove("logs/debug.log")
     remove("logs/info.log")
     remove("logs/error.log")
@@ -33,7 +22,6 @@ def cleanup():
 def test_TTS():
     t = '<speak xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="http://www.w3.org/2001/mstts" xmlns:emo="http://www.w3.org/2009/10/emotionml" version="1.0" xml:lang="en-US"><voice name="zh-CN-XiaoxiaoNeural"><prosody rate="43%" pitch="0%">Content text 0</prosody></voice></speak>'
     ret = tts(t, "output.mp3").get()  # type: ignore
-    remove("output.mp3")
     assert ret.reason == consts.TTS_SUC
 
 class TestUtils:
@@ -54,20 +42,16 @@ class TestUtils:
             Chapter(0, "Test title 0", 'Content text 0'),
             Chapter(1, "Test title 1", 'LongText\n'*625)
         ]
-        rst = '<speak xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="http://www.w3.org/2001/mstts" xmlns:emo="http://www.w3.org/2009/10/emotionml" version="1.0" xml:lang="en-US">\n    <voice name="zh-CN-XiaoxiaoNeural">\n        <prosody rate="43%" pitch="0%">\n            Content text 0\n\n        </prosody>\n    </voice>\n</speak>'
         t = Trans()  # type: ignore
         l: list[Chapter] = []
         for i in con:
             l.extend(t(i))
-        ser = ToServer("Output")
-        ser.asyncDownload(l)
-        assert l[0].content == rst
         assert len(l[1].content) < 3000
 
 
     def test_tts(self):
         con = [
-            Chapter(0, "Test title 0", '<speak xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="http://www.w3.org/2001/mstts" xmlns:emo="http://www.w3.org/2009/10/emotionml" version="1.0" xml:lang="en-US"><voice name="zh-CN-XiaoxiaoNeural"><prosody rate="43%" pitch="0%">Content text 0</prosody></voice></speak>'),
+            Chapter(0, "Test title 0.mp3", '<speak xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="http://www.w3.org/2001/mstts" xmlns:emo="http://www.w3.org/2009/10/emotionml" version="1.0" xml:lang="en-US"><voice name="zh-CN-XiaoxiaoNeural"><prosody rate="43%" pitch="0%">Content text 0</prosody></voice></speak>'),
             Chapter(1, "Test title 1.mp3", '<speak xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="http://www.w3.org/2001/mstts" xmlns:emo="http://www.w3.org/2009/10/emotionml" version="1.0" xml:lang="en-US"><voice name="zh-CN-XiaoxiaoNeural"><prosody rate="43%" pitch="0%">'+"甲"*1500+'</prosody></voice></speak>')
         ]
         ser = ToServer("Output")
@@ -102,6 +86,15 @@ class TestException:
         self.g()
     def test_exception(self):
         self.f()
-
-if __name__ == "__main__":
-    TestUtils().test_mer()
+    
+    def test_log(self):
+        log = getLogger("Test")
+        log.debug("Test")
+        log.info("Test")
+        log.error("Test")
+        log.critical("Test")
+        try:
+            1/0
+        except Exception as e:
+            log.super._log(40, "Test Source", (), exc_info=True)
+            log.exception("Test Exception")

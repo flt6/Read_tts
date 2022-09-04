@@ -4,5 +4,5 @@ __pycache__
 logs
 DEBUG
 *.conf
-*.mp3
+# *.mp3
 .vscode
