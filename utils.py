@@ -7,7 +7,7 @@ from re import match, sub
 from alive_progress import alive_bar
 # TODO: multiprocessing
 from multiprocessing import Process
-from subprocess import run
+from subprocess import PIPE, run
 
 from model import Book, ChapterList, Chapter
 from tts import tts
@@ -281,6 +281,7 @@ def _merge(logger,ch,name,is_remove):
     cmd=[
         'ffmpeg',
         '-i',
+        '-hide_banner',
         f'concat:{"|".join(paths)}',
         '-c',
         'copy',
@@ -288,10 +289,12 @@ def _merge(logger,ch,name,is_remove):
         optDir+"/"+name.replace(" (0).mp3",".mp3")
     ]
     try:
-        ret=run(cmd)
+        ret=run(cmd,stderr=PIPE)
         if ret.returncode != 0:
+            logger.error(ret.stderr.decode("utf-8"))
             logger.error("Error occurred while merging. code=%d"%ret.returncode)
         else:
+            logger.debug(ret.stderr.decode("utf-8"))
             if is_remove:
                 for path in paths:
                     try:

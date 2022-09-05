@@ -40,9 +40,9 @@ class ErrorHandler:
             @param exit:
                 Whether exit the programm due to the error.
         '''
-        if not isinstance(err, Exception):
+        if not isinstance(err, BaseException):
             raise TypeError(
-                "param 'err' must be instance of 'Exception', but {} got.".format(type(err)))
+                "param 'err' must be instance of 'BaseException', but {} got.".format(type(err)))
         if not(isinstance(level, int) and level < 4 and level > 0):
             raise ValueError(
                 "param 'level' must be integer and between 1-3, but '{}' got.".format(level))

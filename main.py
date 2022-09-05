@@ -3,6 +3,7 @@ from consts import MAX_RETRY,OPT_DIR
 from utils import ToApp,ToServer,Trans,merge
 from model import Chapter
 from exceptions import ErrorHandler
+from traceback import format_exc
 
 
 logger = getLogger("Main")
@@ -65,5 +66,10 @@ class Main:
         self.merge(chaps)
 
 if __name__ == '__main__':
-    main=Main(1,OPT_DIR)
-    main()
+    try:
+        main=Main(1,OPT_DIR)
+        main()
+    except BaseException as e:
+        logger.critical("Uncaught exception")
+        logger.critical(format_exc())
+        ErrorHandler(e,"UNCAUGHT",logger,3,True,True)
