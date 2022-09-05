@@ -11,9 +11,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2.4.2
-        
+
       - name: Setup Python
         uses: actions/setup-python@v4.2.0
-        
-      - name: actions-pytest
-        uses: xoviat/actions-pytest@0.1-alpha2
+
+      - name: install pytest
+        run: pip install pytest
+      
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: pytest
+        run: pytest
+          
