@@ -280,8 +280,8 @@ def _merge(logger,ch,name,is_remove):
     paths=[optDir+"/"+i.title for i in ch]
     cmd=[
         'ffmpeg',
-        '-i',
         '-hide_banner',
+        '-i',
         f'concat:{"|".join(paths)}',
         '-c',
         'copy',
