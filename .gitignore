@@ -1,5 +1,5 @@
 *.exe
-Output
+Output*
 __pycache__
 logs
 DEBUG

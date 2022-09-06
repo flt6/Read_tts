@@ -1,9 +1,10 @@
 from log import getLogger
 from consts import MAX_RETRY,OPT_DIR
-from utils import ToApp,ToServer,Trans,merge
+from utils import ToApp,ToServer,Trans,merge,time_fmt
 from model import Chapter
 from exceptions import ErrorHandler
 from traceback import format_exc
+from time import time
 
 
 logger = getLogger("Main")
@@ -19,6 +20,9 @@ class Main:
         shelf=self.app.get_shelf()
         bgn,to,book=self.app.choose_book(shelf)
         chapList=self.app.get_charpter_list(book)
+        if chapList is None:
+            logger.critical("chapList is None")
+            exit(1)
         logger.info("Begin to get Chapers")
         chaps,retry=self.app.download_content(chapList[bgn:to])
         cnt=0
@@ -67,8 +71,12 @@ class Main:
 
 if __name__ == '__main__':
     try:
+        bgn = time()
         main=Main(1,OPT_DIR)
         main()
+        end = time()
+        t = time_fmt(end-bgn)
+        logger.info("Totally used "+t)
     except BaseException as e:
         logger.critical("Uncaught exception")
         logger.critical(format_exc())

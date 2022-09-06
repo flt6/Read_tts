@@ -24,11 +24,10 @@ from azure.cognitiveservices.speech.speech import ResultFuture
 
 def req(param:tuple[str,list[Any]], caller="Requester", logger=None,
         level=1, exit=False, wait=False):
-    getLogger("request").debug("param=%s,caller=%s" % (param, caller))
     try:
         url,args = param
         url = url.format(args[0],*[quote(str(i)) for i in args[1:]])
-        getLogger("request").debug("url=%s"%url)
+        getLogger("request").debug("url=%s,caller=%s"%(url,caller))
         res = get(url)
         if res.status_code != 200:
             raise ServerError(res.status_code)  # type: ignore
@@ -199,7 +198,7 @@ class Trans:
         while i<totLines:
             tem=""
             getLogger("DEBUG").debug(f"i={i} totLines={totLines}")
-            while len(tem)<1500 and i<totLines:
+            while len(tem)<consts.MAX_CHAR and i<totLines:
                 tem+=lines[i]
                 tem+="\n"
                 i+=1
@@ -240,7 +239,7 @@ class ToServer:
                 task = tts(chap.content, opt)
                 self.logger.debug(f"Create task {task}")
                 st.append((task, i))  # type: ignore
-                if len(st) >= 5:
+                if len(st) >= consts.MAX_TASK:
                     self.logger.info("Start async waiting.")
                     for task, j in st:
                         try:
@@ -259,7 +258,7 @@ class ToServer:
                     st = []
                     self.logger.info("End async waiting.")
             self.logger.info("Start last async waiting.")
-            if len(st) >= 5:
+            if len(st) >= consts.MAX_TASK:
                 self.logger.info("Start async waiting.")
                 for task, j in st:
                     try:
@@ -323,3 +322,10 @@ def merge(chapters:list[Chapter],is_remove=True):
             name=chap.title
             ch=[chap]
     _merge(logger,ch,name,is_remove)
+
+def time_fmt(time:float):
+    time = int(time)
+    hour=time//3600
+    min=time//60
+    sec=time%60
+    return "%02d:%02d:%02d"%(hour,min,sec)
