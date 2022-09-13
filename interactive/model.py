@@ -1,5 +1,4 @@
-# from requests import get
-from typing import Optional, List, Union
+from typing import Optional
 
 class Book:
     author: str
@@ -57,15 +56,11 @@ class Chapter:
     content: str
     '内容'
 
-    def __init__(self,  index: int,title: str, content: str,spl:int=-1,**kwargs) -> None:
+    def __init__(self,  index: int,title: str, content: str,**kwargs) -> None:
         self.idx = index
         self.title = title
         self.content = content
-        self.spl = spl
         self.dict=kwargs
 
     def __repr__(self):
         return "<Chapter idx={} title={} content={}>".format(self.idx,self.title,self.content.strip()[:5])
-
-    def get_dict(self):
-        return {"idx":self.idx, "title":self.title,"content":self.content}

@@ -1,16 +1,14 @@
-from time import sleep
 from requests import get
 from requests.utils import quote  # type: ignore
-from log import getLogger
+from log import getLogger,Log
 from os.path import isfile, isdir
 from os import mkdir,remove
-from re import match, sub
+from shutil import rmtree
+from re import sub
 from alive_progress import alive_bar
-# TODO: multiprocessing
-from multiprocessing import Process
 from subprocess import PIPE, run
 
-from model import Book, ChapterList, Chapter
+from model import Chapter
 from tts import tts
 
 from exceptions import ErrorHandler
@@ -19,7 +17,7 @@ from requests.exceptions import RequestException
 
 
 import consts
-from typing import Any,TypeVar
+from typing import Any
 from azure.cognitiveservices.speech.speech import ResultFuture
 from azure.cognitiveservices.speech import SpeechSynthesisResult
 
@@ -45,147 +43,6 @@ def req(param:tuple[str,list[Any]], caller="Requester", logger=None,
         ErrorHandler(e, caller, logger, level, exit, wait)()
         return None
     return json
-
-
-class Stack:
-    def __init__(self):
-        self._st = []
-
-    def push(self, x):
-        self._st.append(x)
-
-    def top(self):
-        return self._st[-1]
-
-    def pop(self):
-        return self._st.pop()
-
-    def length(self):
-        return len(self._st)
-
-    def empty(self):
-        return self.length() == 0
-
-
-class ToApp:
-    def __init__(self):
-        self.logger = getLogger("ToApp")
-        self.getIP()
-        self.saveIP()
-
-    def get_shelf(self):
-        '''
-            Get the shelf infomation from the app.
-            @return: Is succeeded.
-        '''
-        url = consts.GET_SHELF
-        shelf: dict = req((url,[self.ip]), 'ToApp', level=2, exit=True, wait=True)  # type: ignore
-        books = []
-        for i in range(len(shelf)):
-            book = Book(**shelf[i])
-            if not book.available:
-                self.logger.debug("Book not available")
-                continue
-            if book.idx == 0:
-                self.logger.debug(f"No ChaperIndex.")
-                # continue
-            tip = consts.CHOOSEBOOK % (
-                i+1,
-                book.name,
-                book.author,
-                book.idx
-            )
-            print(tip)
-            books.append(book)
-        return books
-
-    def choose_book(self, books: list[Book]):
-        num = int(input("No. "))-1
-        bgn = input(
-            "From(%d: %s): " % (
-                books[num].idx,
-                books[num].title
-            )
-        )
-        bgn = books[num].idx if bgn == '' else int(bgn)
-        to = int(input("To. "))
-        book = books[num]
-        return (bgn, to, book)
-
-    def get_charpter_list(self, book: Book):
-        url = consts.GET_CHAPTER_LIST
-        chapters = req((url,[self.ip, book.url]), "ToApp", level=2, exit=True, wait=True)
-        if chapters is None:
-            return
-        return [ChapterList(**item, book=book.url) for item in chapters]
-
-    def download_content(self, chapters: list[ChapterList]):
-        retry = []
-        con = []
-        with alive_bar(len(chapters)) as bar:
-            for ch in chapters:
-                url = consts.GET_CONTENT
-                res = req((url,[self.ip, ch.url, ch.idx]), "ToApp")
-                bar()
-                if res is None:
-                    retry.append(ch)
-                    continue
-                con.append(Chapter(ch.idx, ch.title, res))
-        return (con, retry)
-
-    def _testIP(self, ip: str):
-        if not match(r"(\d{1,3}\.){3}\d{1,3}", ip):
-            self.logger.debug("Regular Expression match failed.")
-            return False
-        try:
-            res = get(consts.GET_SHELF.format(ip))
-            self.logger.debug("HTTP connect status_code=%d" % res.status_code)
-            if res.status_code != 200:
-                raise ServerError(res.status_code)  # type: ignore
-            return True
-        except RequestException:
-            self.logger.debug("Can't connect to server")
-            return False
-        except Exception as e:
-            ErrorHandler(e, "testIP", self.logger, 2)()
-
-    def getIP(self):
-        if isfile("ip.conf"):
-            try:
-                with open("ip.conf", "r") as f:
-                    ip = f.read()
-                    self.logger.debug("Set ip=%s" % ip)
-                    if self._testIP(ip):
-                        self.ip = ip
-                        return
-            except Exception as e:
-                ErrorHandler(e, "ToApp", self.logger)()
-            self.logger.debug("_testIP() returned False")
-        while True:
-            ip = input("ip: ")
-            self.logger.debug("Set ip=%s" % ip)
-            if ":" not in ip:
-                ip += ":1122"
-            if self._testIP(ip):
-                self.ip = ip
-                return
-            else:
-                self.logger.debug("_testIP() returned False")
-                print("Can't connect to APP.")
-
-    def saveIP(self):
-        if isdir("ip.conf"):
-            print("Directory 'ip.conf' already exists.")
-            print("Please delete it first, or IP can't be saved.")
-            e = FileExistsError("Directory 'ip.conf' exists.")
-            ErrorHandler(e, "ToApp")()
-            return
-        try:
-            with open("ip.conf", "w") as f:
-                f.write(self.ip)
-        except Exception as e:
-            ErrorHandler(e, "ToApp")()
-
 
 class Trans:
     def __init__(self, type: int = 1):
@@ -218,7 +75,7 @@ class Trans:
             title=self.title(chap)
             content=self.content_basic(chap)
             for i,t in enumerate(content):
-                opt.append(Chapter(chap.idx,title+f" ({i}).mp3",t,i))
+                opt.append(Chapter(chap.idx,title+f" ({i}).mp3",t))
             return opt
 
 class ToServer:
@@ -280,10 +137,9 @@ class ToServer:
                 self.logger.info("End async waiting.")
         return retry
 
-def _merge(logger,ch,name,is_remove):
-    optDir=consts.OPT_DIR
+def _merge(dir:str,logger:Log,ch:list[Chapter],name:str,is_remove:bool):
     logger.debug(f"Start merging '{name}'")
-    paths=[optDir+"/"+i.title for i in ch]
+    paths=[dir+"/"+i.title for i in ch]
     cmd=[
         'ffmpeg',
         '-hide_banner',
@@ -292,7 +148,7 @@ def _merge(logger,ch,name,is_remove):
         '-c',
         'copy',
         '-y',
-        optDir+"/"+name.replace(" (0).mp3",".mp3")
+        dir+"/"+name.replace(" (0).mp3",".mp3")
     ]
     try:
         ret=run(cmd,stderr=PIPE)
@@ -310,7 +166,7 @@ def _merge(logger,ch,name,is_remove):
     except Exception as e:
         ErrorHandler(e, "merge",logger)()
 
-def merge(chapters:list[Chapter],is_remove=True):
+def merge(chapters:list[Chapter],dir:str,is_remove=True):
     logger = getLogger("Merge")
     ch=[]
     idx=-1
@@ -324,11 +180,11 @@ def merge(chapters:list[Chapter],is_remove=True):
                 name=chap.title
                 ch=[chap]
                 continue
-            _merge(logger,ch,name,is_remove)
+            _merge(dir,logger,ch,name,is_remove)
             idx=chap.idx
             name=chap.title
             ch=[chap]
-    _merge(logger,ch,name,is_remove)
+    _merge(dir,logger,ch,name,is_remove)
 
 def time_fmt(time:float):
     time = int(time)
@@ -336,3 +192,9 @@ def time_fmt(time:float):
     min=time//60
     sec=time%60
     return "%02d:%02d:%02d"%(hour,min,sec)
+
+def delete(path):
+    if isfile(path):
+        remove(path)
+    if isdir(path):
+        rmtree(path)
