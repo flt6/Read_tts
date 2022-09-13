@@ -1,3 +1,4 @@
+from time import sleep
 from requests import get
 from requests.utils import quote  # type: ignore
 from log import getLogger
@@ -20,6 +21,7 @@ from requests.exceptions import RequestException
 import consts
 from typing import Any,TypeVar
 from azure.cognitiveservices.speech.speech import ResultFuture
+from azure.cognitiveservices.speech import SpeechSynthesisResult
 
 
 def req(param:tuple[str,list[Any]], caller="Requester", logger=None,
@@ -86,7 +88,7 @@ class ToApp:
                 continue
             if book.idx == 0:
                 self.logger.debug(f"No ChaperIndex.")
-                continue
+                # continue
             tip = consts.CHOOSEBOOK % (
                 i+1,
                 book.name,
@@ -244,14 +246,19 @@ class ToServer:
                     for task, j in st:
                         try:
                             ret = task.get()
+                            ret:SpeechSynthesisResult
                             self.logger.debug("audio_duration="+str(ret.audio_duration))
+                            if ret.audio_duration.total_seconds() == 0:
+                                raise RuntimeError("Audio duration is zero.")
                             if ret.reason != consts.TTS_SUC:
                                 self.logger.error(ret.reason)
                                 self.logger.error(ret.cancellation_details)
                                 self.logger.debug(chapters[j].idx)
                                 self.logger.debug("SSML Text: " + chapters[j].content)
                                 retry.append(chapters[j])
-                        except Exception as e:
+                        except RuntimeError as e:
+                            ErrorHandler(e,"RE",self.logger)
+                        except BaseException as e:
                             ErrorHandler(e, "AsyncReq", self.logger)
                             retry.append(chapters[j])
                         bar()

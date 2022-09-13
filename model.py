@@ -66,3 +66,6 @@ class Chapter:
 
     def __repr__(self):
         return "<Chapter idx={} title={} content={}>".format(self.idx,self.title,self.content.strip()[:5])
+
+    def get_dict(self):
+        return {"idx":self.idx, "title":self.title,"content":self.content}

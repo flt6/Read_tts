@@ -6,3 +6,4 @@ DEBUG
 *.conf
 # *.mp3
 .vscode
+*.dmp

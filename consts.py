@@ -24,7 +24,9 @@ now:    %s
 -----------------
 '''
 
-MAX_RETRY=5
+MAX_RETRY= 5
+MAX_TASK = 10
+MAX_CHAR = 1500
 
 OPT_DIR="Output"
 
