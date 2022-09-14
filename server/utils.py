@@ -1,4 +1,5 @@
-from requests import get
+from json import dumps
+from requests import get,post
 from requests.utils import quote  # type: ignore
 from log import getLogger,Log
 from os.path import isfile, isdir
@@ -6,6 +7,7 @@ from os import mkdir,remove
 from shutil import rmtree
 from re import sub
 from alive_progress import alive_bar
+from uuid import uuid1
 from subprocess import PIPE, run
 
 from model import Chapter
@@ -43,6 +45,15 @@ def req(param:tuple[str,list[Any]], caller="Requester", logger=None,
         ErrorHandler(e, caller, logger, level, exit, wait)()
         return None
     return json
+
+class Progress:
+    def __init__(self, total:int):
+        self.id=uuid1().hex
+        post("http://127.0.0.1:8080/progress/add",data=dumps({"num":total,"uuid":self.id}))
+    def close(self):
+        post("http://127.0.0.1:8080/progress/end",json=dumps({"uuid":self.id}))
+    def __call__(self) -> None:
+        post("http://127.0.0.1:8080/progress/bar",json=dumps({"uuid":self.id}))
 
 class Trans:
     def __init__(self, type: int = 1):
@@ -92,50 +103,52 @@ class ToServer:
     def asyncDownload(self, chapters: list[Chapter]):
         st: list[tuple[ResultFuture, int]] = []
         retry: list[Chapter] = []
-        with alive_bar(len(chapters)) as bar:
-            for i, chap in enumerate(chapters):
-                opt = self.optDir+'/'+chap.title
-                task = tts(chap.content, opt)
-                self.logger.debug(f"Create task {task}")
-                st.append((task, i))  # type: ignore
-                if len(st) >= consts.MAX_TASK:
-                    self.logger.info("Start async waiting.")
-                    for task, j in st:
-                        try:
-                            ret = task.get()
-                            ret:SpeechSynthesisResult
-                            self.logger.debug("audio_duration="+str(ret.audio_duration))
-                            self.logger.debug("audio_duration="+str(ret.audio_duration.total_seconds()))
-                            if ret.audio_duration.total_seconds() == 0:
-                                raise RuntimeError("Audio duration is zero.")
-                            if ret.reason != consts.TTS_SUC:
-                                self.logger.error(ret.reason)
-                                self.logger.error(ret.cancellation_details)
-                                self.logger.debug(chapters[j].idx)
-                                self.logger.debug("SSML Text: " + chapters[j].content)
-                                retry.append(chapters[j])
-                        except RuntimeError as e:
-                            ErrorHandler(e,"RE",self.logger)
-                        except BaseException as e:
-                            ErrorHandler(e, "AsyncReq", self.logger)
-                            retry.append(chapters[j])
-                        bar()
-                    st = []
-                    self.logger.info("End async waiting.")
-            self.logger.info("Start last async waiting.")
+        bar = Progress(len(chapters))
+        for i, chap in enumerate(chapters):
+            opt = self.optDir+'/'+chap.title
+            task = tts(chap.content, opt)
+            self.logger.debug(f"Create task {task}")
+            st.append((task, i))  # type: ignore
             if len(st) >= consts.MAX_TASK:
                 self.logger.info("Start async waiting.")
                 for task, j in st:
                     try:
                         ret = task.get()
+                        ret:SpeechSynthesisResult
+                        self.logger.debug("audio_duration="+str(ret.audio_duration))
+                        self.logger.debug("audio_duration="+str(ret.audio_duration.total_seconds()))
+                        if ret.audio_duration.total_seconds() == 0:
+                            self.logger.error("audio_duration=0")
+                            raise RuntimeError("Audio duration is zero.")
                         if ret.reason != consts.TTS_SUC:
                             self.logger.error(ret.reason)
+                            self.logger.error(ret.cancellation_details)
+                            self.logger.debug(chapters[j].idx)
+                            self.logger.debug("SSML Text: " + chapters[j].content)
                             retry.append(chapters[j])
-                    except Exception as e:
+                    except RuntimeError as e:
+                        ErrorHandler(e,"RE",self.logger)
+                    except BaseException as e:
                         ErrorHandler(e, "AsyncReq", self.logger)
                         retry.append(chapters[j])
                     bar()
+                st = []
                 self.logger.info("End async waiting.")
+        self.logger.info("Start last async waiting.")
+        if len(st) >= consts.MAX_TASK:
+            self.logger.info("Start async waiting.")
+            for task, j in st:
+                try:
+                    ret = task.get()
+                    if ret.reason != consts.TTS_SUC:
+                        self.logger.error(ret.reason)
+                        retry.append(chapters[j])
+                except Exception as e:
+                    ErrorHandler(e, "AsyncReq", self.logger)
+                    retry.append(chapters[j])
+                bar()
+            self.logger.info("End async waiting.")
+        bar.close()
         return retry
 
 def _merge(dir:str,logger:Log,ch:list[Chapter],name:str,is_remove:bool):

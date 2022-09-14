@@ -249,3 +249,11 @@ class ConnectServer:
                 getLogger("Server").error("Id not found.")
                 return None
         return 0
+    
+    @classmethod
+    def progress(cls):
+        done,total=get(SER+"/progress/get").json()
+        if total == 0:
+            print("Running...",end='\r')
+        else:
+            print("Running %03d/%03d  %*.01f%%"%(done,total,5,done/total),end='\r')

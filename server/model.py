@@ -49,6 +49,7 @@ class ChapterList:
         self.url = book
         self.dict=kwargs
 
+
 class ChapterModel(BaseModel):
     idx: int
     '章节数'

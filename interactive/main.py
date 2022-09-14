@@ -53,6 +53,7 @@ class Main:
         logger.info("Start waiting.")
         end=[]
         while len(ids)>0:
+            ser.progress()
             for id in range(len(ids)):
                 ret = ser.main_isalive(ids[id])
                 if ret == ser.FINISHED:

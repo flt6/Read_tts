@@ -1,5 +1,6 @@
+from log import getLogger
 from shutil import copy
-from fastapi import FastAPI
+from fastapi import FastAPI,Body
 from starlette.responses import FileResponse
 
 from utils import delete
@@ -18,7 +19,7 @@ app = FastAPI()
 chaps:list[Chapter]=[]
 
 deamons:dict[str,Popen]=dict()
-compress_old:dict[str,Popen]=dict()
+progress:dict[str,list]=dict()
 compress=None
 
 @app.post("/main/chap")
@@ -111,6 +112,52 @@ def getfile():
         filename="Output.7z",
         # background=BackgroundTask(delete,file)
     )
+
+# -------------------------------------------------------
+
+@app.post("/progress/add")
+def add_progress(num:int=Body(),uuid:str=Body()):
+    global progress
+    progress.update({uuid:[0,num,True]})
+
+@app.post("/progress/end")
+def end_progress(uuid:str=Body()):
+    global progress
+    if uuid not in list(progress.keys()):
+        return {"IsSuccess":False,"msg":"Progress `%s` not found"%uuid}
+    progress[uuid][2]=False
+    return {"IsSuccess":True}
+
+@app.post("/progress/bar")
+def update_progress(uuid:str=Body()):
+    if uuid not in list(progress.keys()):
+        return {"IsSuccess":False,"msg":"Progress `%s` not found"%uuid}
+    if not progress[uuid][2]:
+        return {"IsSuccess":False,"msg":"Progress `%s` has closed"%uuid}
+    progress[uuid][0]+=1
+    return {"IsSuccess":True}
+
+def check(l:list):
+    if l[0]>l[1]:
+        getLogger("progress").error("Out of total.")
+        getLogger("progress").debug(str(l))
+        return None
+    if l[2]:
+        return [l[0],l[1]]
+
+@app.get("/progress/get")
+def get_progress():
+    l=list(progress.values())
+    done=0
+    tot=0
+    for i in l:
+        tem=check(i)
+        if tem is None:
+            continue
+        done+=tem[0]
+        tot+=tem[1]
+    return done,tot
+        
 
 # -------------------------------------------------------
 
