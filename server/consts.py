@@ -1,5 +1,5 @@
-from os import path
 from azure.cognitiveservices.speech import ResultReason  # type: ignore
+from os import path
 
 DEBUG = True
 TO_CONSOLE = True
@@ -13,11 +13,11 @@ SSML_MODEL = '''<speak xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="
     </voice>
 </speak>'''
 
-GET_SHELF="http://{}/getBookshelf"
-GET_CHAPTER_LIST="http://{}/getChapterList?url={}"
-GET_CONTENT="http://{}/getBookContent?url={}&index={}"
+GET_SHELF = "http://{}/getBookshelf"
+GET_CHAPTER_LIST = "http://{}/getChapterList?url={}"
+GET_CONTENT = "http://{}/getBookContent?url={}&index={}"
 
-CHOOSEBOOK='''
+CHOOSEBOOK = '''
 No.     %02d
 name:   %s
 author: %s
@@ -25,17 +25,17 @@ now:    %s
 -----------------
 '''
 
-MAX_RETRY= 5
+MAX_RETRY = 5
 MAX_TASK = 10
 MAX_CHAR = 1500
 
-OPT_DIR="Output"
+OPT_DIR = "Output"
 
-TTS_SUC=ResultReason.SynthesizingAudioCompleted
+TTS_SUC = ResultReason.SynthesizingAudioCompleted
 
 if DEBUG is None:
-    DEBUG=path.exists("DEBUG")
+    DEBUG = path.exists("DEBUG")
 if TO_CONSOLE is None:
-    TO_CONSOLE=path.exists("SHOW")
+    TO_CONSOLE = path.exists("SHOW")
 if SHOW_DBG is None:
-    SHOW_DBG=path.exists("SHOW_ALL")
+    SHOW_DBG = path.exists("SHOW_ALL")

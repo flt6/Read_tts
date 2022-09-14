@@ -3,9 +3,9 @@ import consts
 
 from requests.exceptions import RequestException
 from json.decoder import JSONDecodeError
+from traceback import extract_stack
 
 from log import getLogger
-from traceback import extract_stack
 
 
 class ServerError(Exception):
@@ -15,17 +15,20 @@ class ServerError(Exception):
                 text to print
         '''
         self.msg = str(message)
+
+
 class AppError(ServerError):
     def __init__(self, message: Any = None):
         super().__init__(message)
 
 
+
 class ErrorHandler:
     def __init__(
-        self, err, src: str = "Unknown", 
-        logger = None, level: int = 1,
+        self, err, src: str = "Unknown",
+        logger=None, level: int = 1,
         exit=False, wait=False
-        ):
+    ):
         '''
             Dealing with errors.
             @param err:
@@ -104,22 +107,22 @@ class ErrorHandler:
             msg = f"error occurred while decoding JSON at {self.src}:\n"
             msg += f"( {err.doc} ) {err.msg} at {err.pos}"
         elif isinstance(err, KeyboardInterrupt):
-            msg  = "KeyboardInterrupt!"
-            self.exit=True
-            self.wait=False
+            msg = "KeyboardInterrupt!"
+            self.exit = True
+            self.wait = False
         elif isinstance(err, PermissionError):
             msg = "Permission denied!"
-        elif isinstance(err,FileExistsError):
+        elif isinstance(err, FileExistsError):
             msg = "File exists!"+err.args[0]
         elif self.src == "AsyncReq":
-            msg =  "Async request error!\n"
+            msg = "Async request error!\n"
             if isinstance(err, RuntimeError):
-                msg+=f"RE: {err}"
+                msg += f"RE: {err}"
             else:
-                msg+="Unknown error\n"
+                msg += "Unknown error\n"
                 msg += str(type(err))+":"
                 msg += str(err)
-            
+
         else:
             msg = "Unknown error!"
             self.level = 2

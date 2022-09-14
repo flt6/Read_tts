@@ -1,12 +1,12 @@
-from logging import Logger,Formatter,FileHandler
-from logging import DEBUG,INFO,WARNING,ERROR,CRITICAL
+from logging import Logger, Formatter, FileHandler
+from logging import DEBUG, INFO, WARNING, ERROR, CRITICAL
 from traceback import format_exc
 from os import path, mkdir
 import consts
 
 
 class Log(Logger):
-    def __init__(self, name, show=True, debug=False,show_dbg=True) -> None:
+    def __init__(self, name, show=True, debug=False, show_dbg=True) -> None:
         '''Provide log function'''
         super().__init__(name, DEBUG if debug else INFO)
         self.isdebug = debug
@@ -17,8 +17,8 @@ class Log(Logger):
                 "There is a file named 'logs', which is the same as the log directory."
             )
         self.show = show
-        self.show_dbg=show_dbg
-        self.super=super()
+        self.show_dbg = show_dbg
+        self.super = super()
         self.gen_handle()
         self.register_handles()
 
@@ -100,4 +100,9 @@ class Log(Logger):
 
 
 def getLogger(name: str = "Default") -> Log:
-    return Log(name=name, show=consts.TO_CONSOLE, debug=consts.DEBUG,show_dbg=consts.SHOW_DBG).get_logger()
+    return Log(
+        name=name,
+        show=consts.TO_CONSOLE,
+        debug=consts.DEBUG,
+        show_dbg=consts.SHOW_DBG
+    ).get_logger()

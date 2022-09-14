@@ -1,30 +1,33 @@
-import json
-from typing import Any, Union
-from requests import get,post,Response
+from alive_progress import alive_bar
 from requests.utils import quote  # type: ignore
-from log import getLogger
+from requests import get, post
 from os.path import isfile, isdir
 from pickle import dumps
+
 from re import match
-from alive_progress import alive_bar
 
-from model import Book, ChapterList, Chapter
 from consts import SERVER as SER
+from model import Book, ChapterList, Chapter
+from log import getLogger
 
+from requests.exceptions import RequestException
 from exceptions import ErrorHandler
 from exceptions import ServerError, AppError
-from requests.exceptions import RequestException
+
+from requests import Response
+from typing import Any, Union
 
 import consts
 import hashlib
+import json
 
 
 def req(param, caller="Requester", logger=None,
         level=1, exit=False, wait=False):
     try:
-        url,args = param
-        url = url.format(args[0],*[quote(str(i)) for i in args[1:]])
-        getLogger("request").debug("url=%s,caller=%s"%(url,caller))
+        url, args = param
+        url = url.format(args[0], *[quote(str(i)) for i in args[1:]])
+        getLogger("request").debug("url=%s,caller=%s" % (url, caller))
         res = get(url)
         if res.status_code != 200:
             raise ServerError(res.status_code)  # type: ignore
@@ -54,7 +57,8 @@ class ToApp:
             @return: Is succeeded.
         '''
         url = consts.GET_SHELF
-        shelf: dict = req((url,[self.ip]), 'ToApp', level=2, exit=True, wait=True)  # type: ignore
+        shelf: dict = req((url, [self.ip]), 'ToApp',
+                          level=2, exit=True, wait=True)  # type: ignore
         books = []
         for i in range(len(shelf)):
             book = Book(**shelf[i])
@@ -89,7 +93,8 @@ class ToApp:
 
     def get_charpter_list(self, book: Book):
         url = consts.GET_CHAPTER_LIST
-        chapters = req((url,[self.ip, book.url]), "ToApp", level=2, exit=True, wait=True)
+        chapters = req((url, [self.ip, book.url]),
+                       "ToApp", level=2, exit=True, wait=True)
         if chapters is None:
             return
         return [ChapterList(**item, book=book.url) for item in chapters]
@@ -100,7 +105,7 @@ class ToApp:
         with alive_bar(len(chapters)) as bar:
             for ch in chapters:
                 url = consts.GET_CONTENT
-                res = req((url,[self.ip, ch.url, ch.idx]), "ToApp")
+                res = req((url, [self.ip, ch.url, ch.idx]), "ToApp")
                 bar()
                 if res is None:
                     retry.append(ch)
@@ -161,90 +166,93 @@ class ToApp:
         except Exception as e:
             ErrorHandler(e, "ToApp")()
 
+
 class ConnectServer:
 
-    FINISHED=1
-    RUN_ERROR=2
-    NOT_FOUND=3
-    RUNNING=4
+    FINISHED = 1
+    RUN_ERROR = 2
+    NOT_FOUND = 3
+    RUNNING = 4
 
     @classmethod
-    def check(cls,ret:Response)->Union[dict[str,Any],str,list[str]]:
-        getLogger("SerReq").debug("url=%s text=%s" % (ret.url,ret.text))
+    def check(cls, ret: Response) -> Union[dict[str, Any], str, list[str]]:
+        getLogger("SerReq").debug("url=%s text=%s" % (ret.url, ret.text))
         if ret.status_code != 200:
-            e=ServerError("status_code = %d"%ret.status_code)
-            ErrorHandler(e,"Server",exit=True,wait=True)
+            e = ServerError("status_code = %d" % ret.status_code)
+            ErrorHandler(e, "Server", exit=True, wait=True)
         return ret.json()
-    @classmethod
-    def chap(cls,ch:Chapter) -> None:
-        d=ch.get_dict()
-        ret = post(SER+"/main/chap",json=d)
-        ret = cls.check(ret)
-        assert isinstance(ret,dict)
-        assert ret["msg"] =="Success"
 
     @classmethod
-    def main_start(cls,type:int) -> str:
-        ret = get(SER+"/main/start",params={"type":type})
+    def chap(cls, ch: Chapter) -> None:
+        d = ch.get_dict()
+        ret = post(SER+"/main/chap", json=d)
         ret = cls.check(ret)
-        assert isinstance(ret,str)
+        assert isinstance(ret, dict)
+        assert ret["msg"] == "Success"
+
+    @classmethod
+    def main_start(cls, type: int) -> str:
+        ret = get(SER+"/main/start", params={"type": type})
+        ret = cls.check(ret)
+        assert isinstance(ret, str)
         return ret
-    
+
     @classmethod
     def main_clean(cls) -> None:
         cls.check(get(SER+"/main/clean"))
-    
+
     @classmethod
-    def verify(cls,ch:list[Chapter]) -> bool:
-        ser=cls.check(get(SER+"/main/check"))
-        assert isinstance(ser,str)
-        md5=hashlib.md5()
-        l=[(i.idx,i.title,i.content) for i in ch]
+    def verify(cls, ch: list[Chapter]) -> bool:
+        ser = cls.check(get(SER+"/main/check"))
+        assert isinstance(ser, str)
+        md5 = hashlib.md5()
+        l = [(i.idx, i.title, i.content) for i in ch]
         md5.update(dumps(l))
         return md5.hexdigest() == ser
 
     @classmethod
-    def main_isalive(cls,id:str) -> Union[int,None]:
-        ret = cls.check(get(SER+"/main/isalive",params={"id":id}))
-        assert isinstance(ret,dict)
-        msg=ret["msg"]
-        if msg=="Finished":
-            if ret["code"]==0:
+    def main_isalive(cls, id: str) -> Union[int, None]:
+        ret = cls.check(get(SER+"/main/isalive", params={"id": id}))
+        assert isinstance(ret, dict)
+        msg = ret["msg"]
+        if msg == "Finished":
+            if ret["code"] == 0:
                 return cls.FINISHED
             else:
-                getLogger("Server").error("run failed with return code %d"%ret["code"])
+                getLogger("Server").error(
+                    "run failed with return code %d" % ret["code"])
                 return cls.RUN_ERROR
         elif msg == "NotFound":
             return cls.NOT_FOUND
-        elif msg=="Running":
+        elif msg == "Running":
             return cls.RUNNING
-    
+
     @classmethod
-    def pack(cls,id:list[str]):
-        cls.check(get(SER+"/path/merge",data=json.dumps(id)))
+    def pack(cls, id: list[str]):
+        cls.check(get(SER+"/path/merge", data=json.dumps(id)))
         cls.check(get(SER+"/pack/start"))
         ret = cls.check(get(SER+"/pack/available"))
-        if not isinstance(ret,dict):
+        if not isinstance(ret, dict):
             return None
-        while ret["msg"]=="Available":
+        while ret["msg"] == "Available":
             if ret["msg"] == "Error":
                 getLogger("Server").error("Pack Failed.")
                 cls.pack(id)
-            elif ret["msg"] =="NotFound":
+            elif ret["msg"] == "NotFound":
                 getLogger("Server").error("Id not found.")
                 return None
         return 0
-    
+
     @classmethod
     def progress(cls):
-        done,total=cls.check(get(SER+"/progress/get"))
-        assert isinstance(done,int) and isinstance(total,int)
+        done, total = cls.check(get(SER+"/progress/get"))
+        assert isinstance(done, int) and isinstance(total, int)
         if total == 0:
-            print("Running...                       ",end='\r')
+            print("Running...                       ", end='\r')
         else:
-            print("Running %03d/%03d  %*.01f%%"%(done,total,5,(done/total)*100),end='\r')
-    
+            print("Running %03d/%03d  %*.01f%%" %
+                  (done, total, 5, (done/total)*100), end='\r')
+
     @classmethod
     def clean(cls):
         cls.check(get(SER+"/progress/reset"))
-        

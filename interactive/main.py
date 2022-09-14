@@ -1,6 +1,6 @@
 from log import getLogger
 from consts import MAX_RETRY
-from utils import ToApp,ConnectServer
+from utils import ToApp, ConnectServer
 from model import Chapter
 from exceptions import ErrorHandler
 from traceback import format_exc
@@ -38,11 +38,11 @@ class Main:
         logger.info("Request to app finished.")
         return chaps
 
-    def server(self,chaps:list[Chapter]):
-        ser=ConnectServer
+    def server(self, chaps: list[Chapter]):
+        ser = ConnectServer
         # boot
-        ids=[]
-        l=[chaps[i:][::3] for i in range(3)]
+        ids = []
+        l = [chaps[i:][::3] for i in range(3)]
         for sub in l:
             for chap in sub:
                 ser.chap(chap)
@@ -51,8 +51,8 @@ class Main:
             ser.main_clean()
         # wait
         logger.info("Start waiting.")
-        end=[]
-        while len(ids)>0:
+        end = []
+        while len(ids) > 0:
             for id in range(len(ids)):
                 ret = ser.main_isalive(ids[id])
                 if ret == ser.FINISHED:
@@ -61,14 +61,14 @@ class Main:
                     break
                 elif ret != ser.RUNNING:
                     logger.error("ret is not RUNNING or FINISHED")
-                    logger.info("ret=%d"%ret)
+                    logger.info("ret=%d" % ret)
                     ids.pop(id)
             ser.progress()
             sleep(5)
         ser.clean()
         # compress
         logger.info("compressing")
-        ret=ser.pack(end)
+        ret = ser.pack(end)
         if ret is None:
             logger.error("Failed to packs")
         else:

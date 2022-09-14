@@ -1,16 +1,17 @@
-from typing import Union,Optional
+from typing import Union, Optional
 from log import Log
 from model import Chapter
 
 
 def req(
-    url: tuple[str,list[str]],
+    url: tuple[str, list[str]],
     caller: str,
     logger: Optional[Log],
     level: Optional[int],
     exit: Optional[bool],
     wait: Optional[bool]
 ) -> Union[dict, None]: ...
+
 
 class Trans:
     def __init__(self, type: Optional[int]): ...
@@ -24,6 +25,10 @@ class ToServer:
     def createdir(self) -> None: ...
     def asyncDownload(self, chapters: list[Chapter]) -> list[Chapter]: ...
 
-def merge(chapters:list[Chapter],dir:str,is_remove:Optional[bool]) -> None:...
-def time_fmt(time:float) -> str:...
-def delete(path:str) -> None: ...
+
+def merge(chapters: list[Chapter], dir: str,
+          is_remove: Optional[bool]) -> None: ...
+
+
+def time_fmt(time: float) -> str: ...
+def delete(path: str) -> None: ...

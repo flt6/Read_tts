@@ -1,5 +1,5 @@
-from logging import Logger,Formatter,FileHandler
-from logging import DEBUG,INFO,WARNING,ERROR,CRITICAL
+from logging import Logger, Formatter, FileHandler
+from logging import DEBUG, INFO, WARNING, ERROR, CRITICAL
 from traceback import format_exc
 from os import path, mkdir
 import consts
@@ -17,7 +17,7 @@ class Log(Logger):
                 "There is a file named 'logs', which is the same as the log directory."
             )
         self.show = show
-        self.super=super()
+        self.super = super()
         self.gen_handle()
         self.register_handles()
 
