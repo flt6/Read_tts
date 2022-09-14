@@ -6,6 +6,7 @@ TO_CONSOLE = True
 GET_SHELF="http://{}/getBookshelf"
 GET_CHAPTER_LIST="http://{}/getChapterList?url={}"
 GET_CONTENT="http://{}/getBookContent?url={}&index={}"
+SERVER = "http://127.0.0.1:8080"
 
 CHOOSEBOOK='''
 No.     %02d

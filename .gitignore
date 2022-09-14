@@ -1,9 +1,9 @@
 *.exe
+*.dll
 Output*
 __pycache__
 logs
 DEBUG
 *.conf
-# *.mp3
 .vscode
 *.dmp

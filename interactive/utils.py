@@ -1,17 +1,22 @@
-from requests import get
+import json
+from typing import Union
+from requests import get,post,Response
 from requests.utils import quote  # type: ignore
 from log import getLogger
 from os.path import isfile, isdir
+from pickle import dumps
 from re import match
 from alive_progress import alive_bar
 
 from model import Book, ChapterList, Chapter
+from consts import SERVER as SER
 
 from exceptions import ErrorHandler
 from exceptions import ServerError, AppError
 from requests.exceptions import RequestException
 
 import consts
+import hashlib
 
 
 def req(param, caller="Requester", logger=None,
@@ -155,3 +160,92 @@ class ToApp:
                 f.write(self.ip)
         except Exception as e:
             ErrorHandler(e, "ToApp")()
+
+class ConnectServer:
+
+    FINISHED=1
+    RUN_ERROR=2
+    NOT_FOUND=3
+    RUNNING=4
+
+    @classmethod
+    def check(cls,ret:Response)->Union[dict,str]:
+        getLogger("SerReq").debug("url=%s text=%s" % (ret.url,ret.text))
+        if ret.status_code != 200:
+            e=ServerError("status_code = %d"%ret.status_code)
+            ErrorHandler(e,"Server",exit=True,wait=True)
+        return ret.json()
+    @classmethod
+    def chap(cls,ch:Chapter) -> None:
+        d=ch.get_dict()
+        ret = post(SER+"/main/chap",json=d)
+        ret = cls.check(ret)
+        assert isinstance(ret,dict)
+        assert ret["msg"] =="Success"
+
+    @classmethod
+    def main_start(cls,type:int) -> str:
+        ret = get(SER+"/main/start",params={"type":type})
+        ret = cls.check(ret)
+        assert isinstance(ret,str)
+        return ret
+    
+    @classmethod
+    def main_clean(cls) -> None:
+        cls.check(get(SER+"/main/clean"))
+    
+    @classmethod
+    def verify(cls,ch:list[Chapter]) -> bool:
+        ser=cls.check(get(SER+"/main/check"))
+        assert isinstance(ser,str)
+        md5=hashlib.md5()
+        l=[(i.idx,i.title,i.content) for i in ch]
+        md5.update(dumps(l))
+        return md5.hexdigest() == ser
+
+    @classmethod
+    def main_isalive(cls,id:str) -> int:
+        ret = cls.check(get(SER+"/main/isalive",params={"id":id}))
+        assert isinstance(ret,dict)
+        msg=ret["msg"]
+        if msg=="Finished":
+            if ret["code"]==0:
+                return cls.FINISHED
+            else:
+                getLogger("Server").error("run failed with return code %d"%ret["code"])
+                return cls.RUN_ERROR
+        elif msg == "NotFound":
+            return cls.NOT_FOUND
+        elif msg=="Running":
+            return cls.RUNNING
+    
+    @classmethod
+    def pack_old(cls,id:str):
+        cls.check(get(SER+"/pack/start",params={"id":id}))
+        ret = cls.check(get(SER+"/pack/available",params={"id":id}))
+        if not isinstance(ret,dict):
+            return None
+        while ret["msg"]=="Available":
+            if ret["msg"] == "Error":
+                getLogger("Server").error("Pack Failed.")
+                cls.pack(id)
+            elif ret["msg"] =="NotFound":
+                getLogger("Server").error("Id not found.")
+                return None
+        return id
+    
+    @classmethod
+    def pack(cls,id:list[str]):
+        cls.check(get(SER+"/path/merge",data=json.dumps(id)))
+        cls.check(get(SER+"/pack/start"))
+        ret = cls.check(get(SER+"/pack/available"))
+        if not isinstance(ret,dict):
+            return None
+        while ret["msg"]=="Available":
+            if ret["msg"] == "Error":
+                getLogger("Server").error("Pack Failed.")
+                cls.pack(id)
+            elif ret["msg"] =="NotFound":
+                getLogger("Server").error("Id not found.")
+                return None
+        return 0

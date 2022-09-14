@@ -105,6 +105,7 @@ class ToServer:
                             ret = task.get()
                             ret:SpeechSynthesisResult
                             self.logger.debug("audio_duration="+str(ret.audio_duration))
+                            self.logger.debug("audio_duration="+str(ret.audio_duration.total_seconds()))
                             if ret.audio_duration.total_seconds() == 0:
                                 raise RuntimeError("Audio duration is zero.")
                             if ret.reason != consts.TTS_SUC:

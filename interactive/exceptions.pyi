@@ -1,7 +1,8 @@
-from typing import Union,Any
+from typing import Optional, Union,Any
 from log import Logger
 
-class ServerError:...
+class ServerError:
+    def __init__(self, message: Optional[Any]):...
 class AppError(ServerError):...
 
 class ErrorHandler:

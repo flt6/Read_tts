@@ -1,11 +1,14 @@
+from shutil import copy
 from fastapi import FastAPI
 from starlette.responses import FileResponse
 
 from utils import delete
-from model import Chapter
+from model import Chapter,ChapterModel
 
 from pickle import dumps,dump
 import hashlib
+from os import mkdir,listdir
+from re import search
 from subprocess import Popen,PIPE
 
 from typing import Optional
@@ -15,12 +18,17 @@ app = FastAPI()
 chaps:list[Chapter]=[]
 
 deamons:dict[str,Popen]=dict()
-compress:dict[str,Popen]=dict()
+compress_old:dict[str,Popen]=dict()
+compress=None
 
 @app.post("/main/chap")
-def main_chap(file:Chapter):
+def main_chap(file:ChapterModel):
     chaps.append(Chapter(file.idx,file.title,file.content))
     return {"msg":"Success"}
+
+@app.get("/main/clean")
+def main_clean():
+    chaps.clear()
 
 @app.get("/main/check")
 def verify():
@@ -29,12 +37,12 @@ def verify():
     md5.update(dumps(l))
     return md5.hexdigest()
 
-
 @app.get("/main/start")
-async def main_start(optDir:str,type:int):
+async def main_start(type:int):
     global thr
     ver=verify()
-    delete(f"Output_{ver}")
+    optDir = f"Output_{ver}"
+    delete(optDir)
     delete(f"opt_{ver}.7z")
     with open(f"chap_{ver}.dmp","wb") as f:
         dump((chaps,optDir,type),f)
@@ -57,30 +65,33 @@ def main_isalive(id:str):
         return {"msg":"Running"}
     return {"msg":"Finished","code":ret}
 
-@app.get("/log")
-def log(typ:str, delete:Optional[bool]=True):
-    if typ not in ["debug","info","error"]:
-        return None
-    with open(f"logs/{typ}.log","r",encoding="utf-8") as f:
-        t=f.readlines()
-    if delete:
-        open(f"logs/{typ}.log","w").close()
-    return t
+# ------------------------------------------------
+
+@app.get("/path/merge")
+def pack_merge(ids:list[str]):
+    delete("Output")
+    mkdir("Output")
+    for id in ids:
+        dir=f"Output_{id}"
+        for file in listdir(dir):
+            copy(dir+"/"+file,"Output/")
+        # delete(dir)
 
 @app.get("/pack/start")
-def pack_start(id:str):
+def pack_start():
+    global compress
     cmd=[
         "7za",
         "a",
-        f"opt_{id}",
-        f"Output_{id}"
+        f"opt",
+        f"Output"
     ]
     pk = Popen(cmd,stdout=PIPE)
-    compress.update({id:pk})
+    compress=pk
 
 @app.get("/pack/available")
-def pack_available(id:str):
-    pk = compress.get(id)
+def pack_available():
+    pk = compress
     if pk is None:
         return {"msg":"NotFound"}
     ret = pk.poll()
@@ -91,9 +102,35 @@ def pack_available(id:str):
     return {"msg":"Available"}
 
 @app.get("/pack/getfile")
-def getfile(id:str):
-    if pack_available(id)["msg"] != "Available":
-        return {"msg":"NotAvailable"}
+def getfile():
+    file = f"opt.7z"
+    delete(f"Output")
+    # print(file)
     return FileResponse(
-        f"opt_{id}.7z",
+        file,
+        filename="Output.7z",
+        # background=BackgroundTask(delete,file)
     )
+
+# -------------------------------------------------------
+
+@app.get("/cleanup")
+def cleanup():
+    l=listdir()
+    for i in l:
+        if search(r"(Output.+)|(opt.7z)",i) is not None:
+            delete(i)
+
+@app.get("/log")
+def log(typ:str, delete:Optional[bool]=True):
+    if typ not in ["debug","info","error"]:
+        return None
+    with open(f"logs/{typ}.log","r",encoding="gb2312") as f:
+        t=f.readlines()
+    if delete:
+        open(f"logs/{typ}.log","w").close()
+    return t
+
+# ---------------------------------------------------
+
+# uvicorn server:app --host 0.0.0.0 --port 8080

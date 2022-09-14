@@ -49,20 +49,25 @@ class ChapterList:
         self.url = book
         self.dict=kwargs
 
-class Chapter(BaseModel):
+class ChapterModel(BaseModel):
     idx: int
     '章节数'
     title: str
     '标题'
     content: str
     '内容'
-    def __init__(self,  index: int,title: str, content: str):
-        self.idx = index
+
+class Chapter:
+    idx: int
+    '章节数'
+    title: str
+    '标题'
+    content: str
+    '内容'
+    def __init__(self, idx: int,title: str, content: str):
+        self.idx = idx
         self.title = title
         self.content = content
 
     def __repr__(self):
         return "<Chapter idx={} title={} content={}>".format(self.idx,self.title,self.content.strip()[:5])
-
-    def get_dict(self):
-        return {"idx":self.idx, "title":self.title,"content":self.content}

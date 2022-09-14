@@ -1,9 +1,10 @@
 from log import getLogger
-from consts import MAX_RETRY, OPT_DIR
-from utils import ToApp
+from consts import MAX_RETRY
+from utils import ToApp,ConnectServer
+from model import Chapter
 from exceptions import ErrorHandler
 from traceback import format_exc
-from pickle import dump
+from time import sleep
 
 
 logger = getLogger("Main")
@@ -35,18 +36,54 @@ class Main:
                 logger.error(retry)
                 break
         logger.info("Request to app finished.")
-        return chaps, to-bgn+1
+        return chaps
 
-    def __call__(self, type: int, optDir: str):
+    def server(self,chaps:list[Chapter]):
+        ser=ConnectServer
+        # boot
+        ids=[]
+        l=[chaps[i:][::3] for i in range(3)]
+        for sub in l:
+            for chap in sub:
+                ser.chap(chap)
+            assert ser.verify(sub)
+            ids.append(ser.main_start(1))
+            ser.main_clean()
+        # wait
+        logger.info("Start waiting.")
+        end=[]
+        while len(ids)>0:
+            for id in range(len(ids)):
+                ret = ser.main_isalive(ids[id])
+                if ret == ser.FINISHED:
+                    end.append(ids[id])
+                    ids.pop(id)
+                    break
+                elif ret != ser.RUNNING:
+                    logger.error("ret is not RUNNING or FINISHED")
+                    logger.info("ret=%d"%ret)
+                    ids.pop(id)
+            sleep(5)
+        # compress
+        logger.info("compressing")
+        ret=ser.pack(end)
+        if ret is None:
+            logger.error("Failed to packs")
+        else:
+            logger.info("Success compress")
+        # Output
+        logger.info("Request Link:")
+        logger.info("http://127.0.0.1:8080/pack/getfile")
+
+    def __call__(self, type: int):
         chaps = self.dealApp()
-        with open("chap.dmp", "wb") as f:
-            dump((chaps, optDir, type), f)
+        self.server(chaps)
 
 
 if __name__ == '__main__':
     try:
         main = Main()
-        main(1, OPT_DIR)
+        main(1)
     except BaseException as e:
         logger.critical("Uncaught exception")
         logger.critical(format_exc())
