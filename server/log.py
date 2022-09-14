@@ -6,7 +6,7 @@ import consts
 
 
 class Log(Logger):
-    def __init__(self, name, show=True, debug=False) -> None:
+    def __init__(self, name, show=True, debug=False,show_dbg=True) -> None:
         '''Provide log function'''
         super().__init__(name, DEBUG if debug else INFO)
         self.isdebug = debug
@@ -17,13 +17,14 @@ class Log(Logger):
                 "There is a file named 'logs', which is the same as the log directory."
             )
         self.show = show
+        self.show_dbg=show_dbg
         self.super=super()
         self.gen_handle()
         self.register_handles()
 
     def debug(self, text, *args, exc_info=None, **kwargs):
         if self.isEnabledFor(DEBUG):
-            if self.show:
+            if self.show and self.show_dbg:
                 print(self._fmt(f"DEBUG: {str(text)}", DEBUG))
             self._log(DEBUG, text, args, exc_info=exc_info, **kwargs)
 
@@ -99,4 +100,4 @@ class Log(Logger):
 
 
 def getLogger(name: str = "Default") -> Log:
-    return Log(name=name, show=consts.TO_CONSOLE, debug=consts.DEBUG).get_logger()
+    return Log(name=name, show=consts.TO_CONSOLE, debug=consts.DEBUG,show_dbg=consts.SHOW_DBG).get_logger()

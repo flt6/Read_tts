@@ -3,6 +3,7 @@ from azure.cognitiveservices.speech import ResultReason  # type: ignore
 
 DEBUG = True
 TO_CONSOLE = True
+SHOW_DBG = False
 
 SSML_MODEL = '''<speak xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="http://www.w3.org/2001/mstts" xmlns:emo="http://www.w3.org/2009/10/emotionml" version="1.0" xml:lang="en-US">
     <voice name="zh-CN-YunyeNeural">
@@ -34,3 +35,7 @@ TTS_SUC=ResultReason.SynthesizingAudioCompleted
 
 if DEBUG is None:
     DEBUG=path.exists("DEBUG")
+if TO_CONSOLE is None:
+    TO_CONSOLE=path.exists("SHOW")
+if SHOW_DBG is None:
+    SHOW_DBG=path.exists("SHOW_ALL")

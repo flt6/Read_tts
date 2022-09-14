@@ -1,6 +1,7 @@
 *.exe
 *.dll
 Output*
+*.7z
 __pycache__
 logs
 DEBUG

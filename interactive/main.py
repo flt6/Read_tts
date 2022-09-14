@@ -53,7 +53,6 @@ class Main:
         logger.info("Start waiting.")
         end=[]
         while len(ids)>0:
-            ser.progress()
             for id in range(len(ids)):
                 ret = ser.main_isalive(ids[id])
                 if ret == ser.FINISHED:
@@ -64,7 +63,9 @@ class Main:
                     logger.error("ret is not RUNNING or FINISHED")
                     logger.info("ret=%d"%ret)
                     ids.pop(id)
+            ser.progress()
             sleep(5)
+        ser.clean()
         # compress
         logger.info("compressing")
         ret=ser.pack(end)

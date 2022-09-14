@@ -1,29 +1,29 @@
-name: Pytest
+# name: Pytest
 
 # on: [push]
 
-jobs:
-  build-windows:
-    runs-on: windows-latest
-    strategy:
-      max-parallel: 5
+# jobs:
+#   build-windows:
+#     runs-on: windows-latest
+#     strategy:
+#       max-parallel: 5
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2.4.2
+#     steps:
+#       - name: Checkout
+#         uses: actions/checkout@v2.4.2
 
-      - name: Setup Python
-        uses: actions/setup-python@v4.2.0
+#       - name: Setup Python
+#         uses: actions/setup-python@v4.2.0
         
-      - name: Setup FFmpeg
-        uses: FedericoCarboni/setup-ffmpeg@v1.1.0
+#       - name: Setup FFmpeg
+#         uses: FedericoCarboni/setup-ffmpeg@v1.1.0
 
-      - name: install pytest
-        run: pip install pytest
+#       - name: install pytest
+#         run: pip install pytest
       
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+#       - name: Install dependencies
+#         run: pip install -r requirements.txt
 
-      - name: pytest
-        run: pytest
+#       - name: pytest
+#         run: pytest
           

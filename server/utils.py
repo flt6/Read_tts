@@ -51,9 +51,10 @@ class Progress:
         self.id=uuid1().hex
         post("http://127.0.0.1:8080/progress/add",data=dumps({"num":total,"uuid":self.id}))
     def close(self):
-        post("http://127.0.0.1:8080/progress/end",json=dumps({"uuid":self.id}))
+        post("http://127.0.0.1:8080/progress/end",params={"uuid":self.id})
     def __call__(self) -> None:
-        post("http://127.0.0.1:8080/progress/bar",json=dumps({"uuid":self.id}))
+        getLogger("progress").debug("Call")
+        post("http://127.0.0.1:8080/progress/bar",params={"uuid":self.id})
 
 class Trans:
     def __init__(self, type: int = 1):
@@ -104,6 +105,7 @@ class ToServer:
         st: list[tuple[ResultFuture, int]] = []
         retry: list[Chapter] = []
         bar = Progress(len(chapters))
+        getLogger("Progress").debug("Call1")
         for i, chap in enumerate(chapters):
             opt = self.optDir+'/'+chap.title
             task = tts(chap.content, opt)
@@ -116,9 +118,9 @@ class ToServer:
                         ret = task.get()
                         ret:SpeechSynthesisResult
                         self.logger.debug("audio_duration="+str(ret.audio_duration))
-                        self.logger.debug("audio_duration="+str(ret.audio_duration.total_seconds()))
                         if ret.audio_duration.total_seconds() == 0:
                             self.logger.error("audio_duration=0")
+                            retry.append(chapters[j])
                             raise RuntimeError("Audio duration is zero.")
                         if ret.reason != consts.TTS_SUC:
                             self.logger.error(ret.reason)
@@ -131,23 +133,25 @@ class ToServer:
                     except BaseException as e:
                         ErrorHandler(e, "AsyncReq", self.logger)
                         retry.append(chapters[j])
+                    getLogger('bar').debug("bar")
                     bar()
                 st = []
                 self.logger.info("End async waiting.")
+        # ----------------------------------------------
         self.logger.info("Start last async waiting.")
-        if len(st) >= consts.MAX_TASK:
-            self.logger.info("Start async waiting.")
-            for task, j in st:
-                try:
-                    ret = task.get()
-                    if ret.reason != consts.TTS_SUC:
-                        self.logger.error(ret.reason)
-                        retry.append(chapters[j])
-                except Exception as e:
-                    ErrorHandler(e, "AsyncReq", self.logger)
+        for task, j in st:
+            try:
+                ret = task.get()
+                if ret.reason != consts.TTS_SUC:
+                    self.logger.error(ret.reason)
                     retry.append(chapters[j])
-                bar()
-            self.logger.info("End async waiting.")
+            except Exception as e:
+                ErrorHandler(e, "AsyncReq", self.logger)
+                retry.append(chapters[j])
+            getLogger('bar').debug("bar")
+            bar()
+        self.logger.info("End async waiting.")
+        # ----------------------------------------------
         bar.close()
         return retry
 

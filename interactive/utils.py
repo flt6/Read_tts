@@ -1,5 +1,5 @@
 import json
-from typing import Union
+from typing import Any, Union
 from requests import get,post,Response
 from requests.utils import quote  # type: ignore
 from log import getLogger
@@ -169,7 +169,7 @@ class ConnectServer:
     RUNNING=4
 
     @classmethod
-    def check(cls,ret:Response)->Union[dict,str]:
+    def check(cls,ret:Response)->Union[dict[str,Any],str,list[str]]:
         getLogger("SerReq").debug("url=%s text=%s" % (ret.url,ret.text))
         if ret.status_code != 200:
             e=ServerError("status_code = %d"%ret.status_code)
@@ -204,7 +204,7 @@ class ConnectServer:
         return md5.hexdigest() == ser
 
     @classmethod
-    def main_isalive(cls,id:str) -> int:
+    def main_isalive(cls,id:str) -> Union[int,None]:
         ret = cls.check(get(SER+"/main/isalive",params={"id":id}))
         assert isinstance(ret,dict)
         msg=ret["msg"]
@@ -218,21 +218,6 @@ class ConnectServer:
             return cls.NOT_FOUND
         elif msg=="Running":
             return cls.RUNNING
-    
-    @classmethod
-    def pack_old(cls,id:str):
-        cls.check(get(SER+"/pack/start",params={"id":id}))
-        ret = cls.check(get(SER+"/pack/available",params={"id":id}))
-        if not isinstance(ret,dict):
-            return None
-        while ret["msg"]=="Available":
-            if ret["msg"] == "Error":
-                getLogger("Server").error("Pack Failed.")
-                cls.pack(id)
-            elif ret["msg"] =="NotFound":
-                getLogger("Server").error("Id not found.")
-                return None
-        return id
     
     @classmethod
     def pack(cls,id:list[str]):
@@ -252,8 +237,14 @@ class ConnectServer:
     
     @classmethod
     def progress(cls):
-        done,total=get(SER+"/progress/get").json()
+        done,total=cls.check(get(SER+"/progress/get"))
+        assert isinstance(done,int) and isinstance(total,int)
         if total == 0:
-            print("Running...",end='\r')
+            print("Running...                       ",end='\r')
         else:
-            print("Running %03d/%03d  %*.01f%%"%(done,total,5,done/total),end='\r')
+            print("Running %03d/%03d  %*.01f%%"%(done,total,5,(done/total)*100),end='\r')
+    
+    @classmethod
+    def clean(cls):
+        cls.check(get(SER+"/progress/reset"))
+        

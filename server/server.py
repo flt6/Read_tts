@@ -1,3 +1,4 @@
+from traceback import format_exc
 from log import getLogger
 from shutil import copy
 from fastapi import FastAPI,Body
@@ -70,25 +71,33 @@ def main_isalive(id:str):
 
 @app.get("/path/merge")
 def pack_merge(ids:list[str]):
-    delete("Output")
-    mkdir("Output")
-    for id in ids:
-        dir=f"Output_{id}"
-        for file in listdir(dir):
-            copy(dir+"/"+file,"Output/")
-        # delete(dir)
+    try:
+        delete("Output")
+        mkdir("Output")
+        for id in ids:
+            dir=f"Output_{id}"
+            for file in listdir(dir):
+                copy(dir+"/"+file,"Output/")
+        return {"IsSuccess":True}
+    except Exception:
+        return {"IsSuccess":False,"err":format_exc()}
 
 @app.get("/pack/start")
 def pack_start():
     global compress
-    cmd=[
-        "7za",
-        "a",
-        f"opt",
-        f"Output"
-    ]
-    pk = Popen(cmd,stdout=PIPE)
-    compress=pk
+    try:
+        redelete()
+        cmd=[
+            "7za",
+            "a",
+            f"opt",
+            f"Output"
+        ]
+        pk = Popen(cmd,stdout=PIPE)
+        compress=pk
+        return {"IsSuccess":True}
+    except Exception:
+        return {"IsSuccess":False,"err":format_exc()}
 
 @app.get("/pack/available")
 def pack_available():
@@ -118,10 +127,14 @@ def getfile():
 @app.post("/progress/add")
 def add_progress(num:int=Body(),uuid:str=Body()):
     global progress
-    progress.update({uuid:[0,num,True]})
+    try:
+        progress.update({uuid:[0,num,True]})
+        return {"IsSuccess":True}
+    except Exception:
+        return {"IsSuccess":False,"err":format_exc()}
 
 @app.post("/progress/end")
-def end_progress(uuid:str=Body()):
+def end_progress(uuid:str):
     global progress
     if uuid not in list(progress.keys()):
         return {"IsSuccess":False,"msg":"Progress `%s` not found"%uuid}
@@ -129,7 +142,8 @@ def end_progress(uuid:str=Body()):
     return {"IsSuccess":True}
 
 @app.post("/progress/bar")
-def update_progress(uuid:str=Body()):
+def update_progress(uuid:str):
+    global progress
     if uuid not in list(progress.keys()):
         return {"IsSuccess":False,"msg":"Progress `%s` not found"%uuid}
     if not progress[uuid][2]:
@@ -142,8 +156,7 @@ def check(l:list):
         getLogger("progress").error("Out of total.")
         getLogger("progress").debug(str(l))
         return None
-    if l[2]:
-        return [l[0],l[1]]
+    return [l[0],l[1]]
 
 @app.get("/progress/get")
 def get_progress():
@@ -157,16 +170,46 @@ def get_progress():
         done+=tem[0]
         tot+=tem[1]
     return done,tot
-        
+
+@app.get("/progress/reset")
+def reset_progress():
+    global progress
+    try:
+        progress.clear()
+        return {"IsSuccess":True}
+    except Exception:
+        return {"IsSuccess":False,"err":format_exc()}
+
+@app.get("/progress/debug")
+def debug():
+    return progress
 
 # -------------------------------------------------------
 
 @app.get("/cleanup")
 def cleanup():
-    l=listdir()
-    for i in l:
-        if search(r"(Output.+)|(opt.7z)",i) is not None:
-            delete(i)
+    try:
+        enum=["debug","info","error"]
+        for file in enum:
+            open(f"logs/{file}.log","w").close()
+        l=listdir()
+        for i in l:
+            if search(r"(Output.*)|(opt.7z)",i) is not None:
+                delete(i)
+        return {"IsSuccess":True}
+    except Exception:
+        return {"IsSuccess":False,"err":format_exc()}
+
+@app.get("/redelete")
+def redelete():
+    try:
+        l=listdir("Output")
+        for i in l:
+            if search(r"\s\(\d+\)\.mp3$",i) is not None:
+                delete("Output/"+i)
+        return {"IsSuccess":True}
+    except Exception:
+        return {"IsSuccess":False,"err":format_exc()}
 
 @app.get("/log")
 def log(typ:str, delete:Optional[bool]=True):
