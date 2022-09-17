@@ -80,16 +80,23 @@ class ToApp:
 
     def choose_book(self, books: list[Book]):
         num = int(input("No. "))-1
+        book = books[num]
+        return book
+
+    def choose_area(self,book:Book):
         bgn = input(
             "From(%d: %s): " % (
-                books[num].idx,
-                books[num].title
+                book.idx,
+                book.title
             )
         )
-        bgn = books[num].idx if bgn == '' else int(bgn)
+        bgn = book.idx if bgn == '' else int(bgn)
         to = int(input("To. "))
-        book = books[num]
-        return (bgn, to, book)
+        return range(bgn, to)
+    
+    def choose_single(self,book):
+        chaps=input("chapters(eg: '1 2 3'): ").split(" ")
+        return [int(i) for i in chaps]
 
     def get_charpter_list(self, book: Book):
         url = consts.GET_CHAPTER_LIST
@@ -200,6 +207,22 @@ class ConnectServer:
     @classmethod
     def main_clean(cls) -> None:
         cls.check(get(SER+"/main/clean"))
+
+    @classmethod
+    def init(cls) -> None:
+        cls.check(get(SER+"/main/retry/clear"))
+    
+    @classmethod
+    def get_retry(cls) -> list[Chapter]:
+        l=cls.check(get(SER+"/main/retry/get"))
+        retry=[]
+        for chap in l:
+            retry.append(Chapter(**chap)) # type: ignore
+        return retry
+
+    @classmethod
+    def get_fail_cnt(cls):
+        return cls.check(get(SER+"/main/fail/get"))
 
     @classmethod
     def verify(cls, ch: list[Chapter]) -> bool:

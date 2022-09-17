@@ -6,7 +6,7 @@ TO_CONSOLE = True
 GET_SHELF =        "http://{}/getBookshelf"
 GET_CHAPTER_LIST = "http://{}/getChapterList?url={}"
 GET_CONTENT =      "http://{}/getBookContent?url={}&index={}"
-SERVER =           "http://127.0.0.1:8080"
+SERVER =           None
 
 CHOOSEBOOK = '''
 No.     %02d
@@ -22,3 +22,7 @@ OPT_DIR = "Output"
 
 if DEBUG is None:
     DEBUG = path.exists("DEBUG")
+if SERVER is None:
+    assert path.exists("server_ip.conf")
+    with open("server_ip.conf", "r") as f:
+        SERVER = f.read()

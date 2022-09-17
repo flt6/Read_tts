@@ -4,6 +4,7 @@ import consts
 from requests.exceptions import RequestException
 from json.decoder import JSONDecodeError
 from traceback import extract_stack
+from requests import post
 
 from log import getLogger
 
@@ -59,6 +60,7 @@ class ErrorHandler:
         self.lgcri = lg.critical
         self.lgexp = lg.exception
         self.lgdbg = lg.debug
+        self.lgwar = lg.warning
 
         self.dbg = consts.DEBUG
         self.level = level
@@ -66,6 +68,7 @@ class ErrorHandler:
         self.src = src
         self.exit = exit
         self.wait = wait
+        self.used=False
 
     def show(self, message: Any):
         level = self.level
@@ -89,12 +92,27 @@ class ErrorHandler:
             if self.wait:
                 input("Pause (input enter to exit)")
             exit(1)
+    
+    def __del__(self):
+        if not self.used:
+            self.lgwar("`ErrorHandler` registered but not used.")
+            raise RuntimeWarning("`ErrorHandler` registered but not used.")
 
     def __call__(self):
+        self.used=True
         err = self.err
         msg = ""
         if isinstance(err, AppError):
             msg = f"While getting data from APP, the server returned an error: {err.msg}"
+        elif self.src == "AsyncReq":
+            msg = "Async request error!\n"
+            post("http://127.0.0.1/main/fail")
+            if isinstance(err, RuntimeError):
+                msg += f"RE: {err}"
+            else:
+                msg += "Unknown error\n"
+                msg += str(type(err))+":"
+                msg += str(err)
         elif isinstance(err, ServerError):
             msg = int(err.msg)
             if msg == 404:
@@ -114,15 +132,6 @@ class ErrorHandler:
             msg = "Permission denied!"
         elif isinstance(err, FileExistsError):
             msg = "File exists!"+err.args[0]
-        elif self.src == "AsyncReq":
-            msg = "Async request error!\n"
-            if isinstance(err, RuntimeError):
-                msg += f"RE: {err}"
-            else:
-                msg += "Unknown error\n"
-                msg += str(type(err))+":"
-                msg += str(err)
-
         else:
             msg = "Unknown error!"
             self.level = 2

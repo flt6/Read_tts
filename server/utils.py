@@ -82,7 +82,7 @@ class Trans:
 
     def title(self, chap: Chapter):
         title = sub(r'''[\*\/\\\|\<\>\? \:\.\'\"\!]''', "", chap.title)
-        title = str(chap.idx)+"_"+chap.title
+        title = str(chap.idx)+"_"+title
         return title
 
     def __call__(self, chap: Chapter):
@@ -135,10 +135,10 @@ class ToServer:
                             self.logger.debug(
                                 "SSML Text: " + chapters[j].content)
                             retry.append(chapters[j])
-                    except RuntimeError as e:
-                        ErrorHandler(e, "RE", self.logger)
+                            e=RuntimeError("ret.reason=%s"%ret.reason)
+                            ErrorHandler(e, "AsyncReq", self.logger)()
                     except BaseException as e:
-                        ErrorHandler(e, "AsyncReq", self.logger)
+                        ErrorHandler(e, "AsyncReq", self.logger)()
                         retry.append(chapters[j])
                     getLogger('bar').debug("bar")
                     bar()
@@ -153,7 +153,7 @@ class ToServer:
                     self.logger.error(ret.reason)
                     retry.append(chapters[j])
             except Exception as e:
-                ErrorHandler(e, "AsyncReq", self.logger)
+                ErrorHandler(e, "AsyncReq", self.logger)()
                 retry.append(chapters[j])
             getLogger('bar').debug("bar")
             bar()

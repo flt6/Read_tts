@@ -5,6 +5,7 @@ from model import Chapter
 from log import getLogger
 
 from traceback import format_exc
+from requests import post
 from pickle import load
 from time import time
 from os import remove
@@ -40,6 +41,11 @@ class Main:
                 logger.error("Too many retries for Getting shelf")
                 logger.error("Articles that failed to download:")
                 logger.error(retry)
+                for chap in retry:
+                    d=chap.get_dict()
+                    ret = post("http://127.0.0.1:8080/main/retry/add",json=d)
+                    ret.raise_for_status()
+                    assert ret.json()["IsSuccess"]
                 break
         logger.info("tts completed.")
 
@@ -78,4 +84,4 @@ if __name__ == '__main__':
     except BaseException as e:
         logger.critical("Uncaught exception")
         logger.critical(format_exc())
-        ErrorHandler(e, "UNCAUGHT", logger, 3, True, True)
+        ErrorHandler(e, "UNCAUGHT", logger, 3, True, True)()

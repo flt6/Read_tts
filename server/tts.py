@@ -16,4 +16,5 @@ def init():
 def tts(ssml: str, path: str):
     if provider is None:
         init()
+    logger.debug("path=%s"%path)
     return provider.ssml_to_speech_async(ssml, path=path)  # type: ignore

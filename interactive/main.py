@@ -1,3 +1,4 @@
+from model import Book
 from log import getLogger
 from consts import MAX_RETRY
 from utils import ToApp, ConnectServer
@@ -14,16 +15,30 @@ class Main:
         self.app = ToApp()
         logger.info("Class 'Main' initialized.")
 
-    def dealApp(self):
+    def interactive(self,typ=1):
         logger.debug("Getting shelf")
         shelf = self.app.get_shelf()
-        bgn, to, book = self.app.choose_book(shelf)
+        book = self.app.choose_book(shelf)
+        if typ ==1:
+            area= self.app.choose_area(book)
+        elif typ ==2:
+            area= self.app.choose_single(book)
+        else:
+            e=ValueError("Invalid `typ` %d"%typ)
+            ErrorHandler(e,"Main",logger,exit=True,wait=True)()
+            raise AssertionError("This should never be executed.")
+        return book,area
+    
+    def dealApp(self,book:Book,area):
         chapList = self.app.get_charpter_list(book)
         if chapList is None:
             logger.critical("chapList is None")
             exit(1)
         logger.info("Begin to get Chapers")
-        chaps, retry = self.app.download_content(chapList[bgn:to])
+        logger.debug(str(area))
+        logger.debug(str(len(chapList)))
+        logger.debug(str(book.tot))
+        chaps, retry = self.app.download_content([chapList[i] for i in area])
         cnt = 0
         while len(retry):
             logger.info("Start (New turn) retry.")
@@ -41,6 +56,7 @@ class Main:
     def server(self, chaps: list[Chapter]):
         ser = ConnectServer
         # boot
+        ser.init()
         ids = []
         l = [chaps[i:][::3] for i in range(3)]
         for sub in l:
@@ -63,6 +79,9 @@ class Main:
                     logger.error("ret is not RUNNING or FINISHED")
                     logger.info("ret=%d" % ret)
                     ids.pop(id)
+            cnt = ser.get_fail_cnt()
+            if cnt!=0:
+                logger.info("Download failed for %d times"%cnt)
             ser.progress()
             sleep(5)
         ser.clean()
@@ -74,19 +93,25 @@ class Main:
         else:
             logger.info("Success compress")
         # Output
+        logger.info("Retry list:")
+        logger.info(str(ser.get_retry()))
         logger.info("Request Link:")
         logger.info("http://127.0.0.1:8080/pack/getfile")
 
-    def __call__(self, type: int):
-        chaps = self.dealApp()
+    def __call__(self, typ: int):
+        book,area = self.interactive(typ)
+        chaps = self.dealApp(book,area)
         self.server(chaps)
 
 
-if __name__ == '__main__':
+def main(typ:int):
     try:
         main = Main()
-        main(1)
+        main(typ)
     except BaseException as e:
         logger.critical("Uncaught exception")
         logger.critical(format_exc())
         ErrorHandler(e, "UNCAUGHT", logger, 3, True, True)
+
+if __name__ == '__main__':
+    main(1)

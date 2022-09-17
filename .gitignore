@@ -1,10 +1,11 @@
 *.exe
 *.dll
-Output*
+*.dmp
 *.7z
-__pycache__
+*.conf
+*.log
+Output*
 logs
 DEBUG
-*.conf
 .vscode
-*.dmp
+__pycache__

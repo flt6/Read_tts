@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Body
 from starlette.responses import FileResponse
+from uvicorn import run
 
 from utils import delete
 from model import Chapter, ChapterModel
@@ -23,6 +24,8 @@ chaps: list[Chapter] = []
 
 deamons: dict[str, Popen] = dict()
 progress: dict[str, list] = dict()
+retry:list[Chapter] = []
+failed=0
 compress = None
 
 
@@ -73,6 +76,36 @@ def main_isalive(id: str):
     if ret is None:
         return {"msg": "Running"}
     return {"msg": "Finished", "code": ret}
+
+
+@app.post("/main/fail")
+def main_failed():
+    global failed
+    failed +=1
+    return {"IsSuccess": True}
+
+@app.get("/main/fail/get")
+def main_fail_get():
+    global failed
+    tmp = failed
+    failed = 0
+    return tmp
+
+@app.post("/main/retry/add")
+def main_retry_add(chap:ChapterModel):
+    global retry
+    retry.append(Chapter(chap.idx,chap.title,chap.content))
+    return {"IsSuccess": True}
+
+@app.get("/main/retry/clear")
+def main_retry_clear():
+    global retry
+    retry.clear()
+    return {"IsSuccess": True}
+
+@app.get("/main/retry/get")
+def main_retry_get():
+    return retry
 
 # ------------------------------------------------
 
@@ -231,11 +264,13 @@ def redelete():
 def log(typ: str, delete: Optional[bool] = True):
     if typ not in ["debug", "info", "error"]:
         return None
-    with open(f"logs/{typ}.log", "r", encoding="gb2312") as f:
+    with open(f"logs/{typ}.log", "r") as f:
         t = f.readlines()
     if delete:
         open(f"logs/{typ}.log", "w").close()
     return t
 
+if __name__ == '__main__':
+    run(app,host="0.0.0.0",port=8080)
 # ---------------------------------------------------
 # uvicorn server:app --host 0.0.0.0 --port 8080
