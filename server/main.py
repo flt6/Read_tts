@@ -1,3 +1,4 @@
+from json import dumps
 from exceptions import ErrorHandler
 from consts import MAX_RETRY
 from utils import ToServer, Trans, merge, time_fmt
@@ -35,7 +36,7 @@ class Main:
         cnt = 0
         while len(retry):
             logger.info("Start (New turn) retry.")
-            retry = self.ser.asyncDownload(retry)
+            retry = self.ser.asyncDownload(list(retry))
             cnt += 1
             if cnt > MAX_RETRY and len(retry) > 0:
                 logger.error("Too many retries for Getting shelf")
@@ -75,6 +76,9 @@ if __name__ == '__main__':
 
         main = Main(type, optDir)
         length = main(chaps)
+        if length==0:
+            logger.info("No chapter requested.")
+            exit()
 
         end = time()
         t = time_fmt(end-bgn)
@@ -84,4 +88,5 @@ if __name__ == '__main__':
     except BaseException as e:
         logger.critical("Uncaught exception")
         logger.critical(format_exc())
+        post("http://127.0.0.1:8080/main/fail",json=dumps(format_exc()))
         ErrorHandler(e, "UNCAUGHT", logger, 3, True, True)()

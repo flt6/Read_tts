@@ -106,9 +106,38 @@ class ToServer:
         if not isdir(self.optDir):
             mkdir(self.optDir)
 
+    def _download(self, st, retry:set[Chapter], chapters, bar):
+        for task, j in st:
+            try:
+                ret = task.get()
+                ret: SpeechSynthesisResult
+                self.logger.debug(
+                    "audio_duration="+str(ret.audio_duration))
+                if ret.audio_duration.total_seconds() == 0:
+                    self.logger.error("audio_duration=0")
+                    retry.add(chapters[j])
+                    raise RuntimeError("Audio duration is zero.")
+                if ret.reason != consts.TTS_SUC:
+                    self.logger.debug("AsyncReq not success `get`")
+                    self.logger.error(ret.reason)
+                    self.logger.error(ret.cancellation_details)
+                    self.logger.debug(chapters[j].idx)
+                    self.logger.debug(
+                        "SSML Text: " + chapters[j].content)
+                    retry.add(chapters[j])
+                    e = RuntimeError("ret.reason=%s" % ret.reason)
+                    self.logger.debug("Call ErrorHandler")
+                    ErrorHandler(e, "AsyncReq", self.logger)()
+            except BaseException as e:
+                self.logger.debug("AsyncReq raise at `try`")
+                ErrorHandler(e, "AsyncReq", self.logger)()
+                retry.add(chapters[j])
+            getLogger('bar').debug("bar")
+            bar()
+
     def asyncDownload(self, chapters: list[Chapter]):
         st: list[tuple[ResultFuture, int]] = []
-        retry: list[Chapter] = []
+        retry: set[Chapter] = set()
         bar = Progress(len(chapters))
         getLogger("Progress").debug("Call1")
         for i, chap in enumerate(chapters):
@@ -118,45 +147,12 @@ class ToServer:
             st.append((task, i))  # type: ignore
             if len(st) >= consts.MAX_TASK:
                 self.logger.info("Start async waiting.")
-                for task, j in st:
-                    try:
-                        ret = task.get()
-                        ret: SpeechSynthesisResult
-                        self.logger.debug(
-                            "audio_duration="+str(ret.audio_duration))
-                        if ret.audio_duration.total_seconds() == 0:
-                            self.logger.error("audio_duration=0")
-                            retry.append(chapters[j])
-                            raise RuntimeError("Audio duration is zero.")
-                        if ret.reason != consts.TTS_SUC:
-                            self.logger.error(ret.reason)
-                            self.logger.error(ret.cancellation_details)
-                            self.logger.debug(chapters[j].idx)
-                            self.logger.debug(
-                                "SSML Text: " + chapters[j].content)
-                            retry.append(chapters[j])
-                            e=RuntimeError("ret.reason=%s"%ret.reason)
-                            ErrorHandler(e, "AsyncReq", self.logger)()
-                    except BaseException as e:
-                        ErrorHandler(e, "AsyncReq", self.logger)()
-                        retry.append(chapters[j])
-                    getLogger('bar').debug("bar")
-                    bar()
+                self._download(st, retry, chapters, bar)
                 st = []
                 self.logger.info("End async waiting.")
         # ----------------------------------------------
         self.logger.info("Start last async waiting.")
-        for task, j in st:
-            try:
-                ret = task.get()
-                if ret.reason != consts.TTS_SUC:
-                    self.logger.error(ret.reason)
-                    retry.append(chapters[j])
-            except Exception as e:
-                ErrorHandler(e, "AsyncReq", self.logger)()
-                retry.append(chapters[j])
-            getLogger('bar').debug("bar")
-            bar()
+        self._download(st, retry, chapters, bar)
         self.logger.info("End async waiting.")
         # ----------------------------------------------
         bar.close()

@@ -25,6 +25,7 @@ chaps: list[Chapter] = []
 deamons: dict[str, Popen] = dict()
 progress: dict[str, list] = dict()
 retry:list[Chapter] = []
+reasons:list[str] = []
 failed=0
 compress = None
 
@@ -55,6 +56,8 @@ async def main_start(type: int):
     optDir = f"Output_{ver}"
     delete(optDir)
     delete(f"opt_{ver}.7z")
+    if len(chaps)==0:
+        return {"IsSuccess":False,"msg":"`chaps` is empty"}
     with open(f"chap_{ver}.dmp", "wb") as f:
         dump((chaps, optDir, type), f)
     cmd = [
@@ -79,17 +82,20 @@ def main_isalive(id: str):
 
 
 @app.post("/main/fail")
-def main_failed():
+def main_failed(text:str=Body()):
     global failed
     failed +=1
+    reasons.append(text)
     return {"IsSuccess": True}
 
 @app.get("/main/fail/get")
 def main_fail_get():
     global failed
-    tmp = failed
+    tmp1 = failed
+    tmp2 = reasons.copy()
     failed = 0
-    return tmp
+    reasons.clear()
+    return [tmp1,tmp2]
 
 @app.post("/main/retry/add")
 def main_retry_add(chap:ChapterModel):

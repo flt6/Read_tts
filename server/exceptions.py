@@ -1,3 +1,4 @@
+from json import dumps
 from typing import Any
 import consts
 
@@ -89,7 +90,7 @@ class ErrorHandler:
 
     def quit(self):
         if self.exit:
-            if self.wait:
+            if self.wait and not consts.DISABE_PAUSE:
                 input("Pause (input enter to exit)")
             exit(1)
     
@@ -106,7 +107,6 @@ class ErrorHandler:
             msg = f"While getting data from APP, the server returned an error: {err.msg}"
         elif self.src == "AsyncReq":
             msg = "Async request error!\n"
-            post("http://127.0.0.1/main/fail")
             if isinstance(err, RuntimeError):
                 msg += f"RE: {err}"
             else:
@@ -137,5 +137,6 @@ class ErrorHandler:
             self.level = 2
             self.dbg = True
             # raise err
+        post("http://127.0.0.1:8080/main/fail",json=dumps(str(err)+"\n"+msg))
         self.show(msg)
         self.quit()

@@ -63,7 +63,10 @@ class Main:
             for chap in sub:
                 ser.chap(chap)
             assert ser.verify(sub)
-            ids.append(ser.main_start(1))
+            obj=ser.main_start(1)
+            if obj is None:
+                continue
+            ids.append(obj)
             ser.main_clean()
         # wait
         logger.info("Start waiting.")
@@ -79,9 +82,10 @@ class Main:
                     logger.error("ret is not RUNNING or FINISHED")
                     logger.info("ret=%d" % ret)
                     ids.pop(id)
-            cnt = ser.get_fail_cnt()
+            cnt,reasons = ser.get_fail()
             if cnt!=0:
-                logger.info("Download failed for %d times"%cnt)
+                logger.error("Download failed for %d times"%cnt)
+                logger.info("Reasons:\n%s"%"\n".join(reasons))
             ser.progress()
             sleep(5)
         ser.clean()

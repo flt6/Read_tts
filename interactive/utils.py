@@ -198,9 +198,12 @@ class ConnectServer:
         assert ret["msg"] == "Success"
 
     @classmethod
-    def main_start(cls, type: int) -> str:
+    def main_start(cls, type: int) -> Union[str,None]:
         ret = get(SER+"/main/start", params={"type": type})
         ret = cls.check(ret)
+        if isinstance(ret, dict):
+            getLogger("Server").error(str(ret))
+            return None
         assert isinstance(ret, str)
         return ret
 
@@ -217,12 +220,13 @@ class ConnectServer:
         l=cls.check(get(SER+"/main/retry/get"))
         retry=[]
         for chap in l:
+            chap["index"] = chap["idx"]  # type: ignore
             retry.append(Chapter(**chap)) # type: ignore
         return retry
 
     @classmethod
-    def get_fail_cnt(cls):
-        return cls.check(get(SER+"/main/fail/get"))
+    def get_fail(cls):
+        return tuple(cls.check(get(SER+"/main/fail/get")))
 
     @classmethod
     def verify(cls, ch: list[Chapter]) -> bool:
