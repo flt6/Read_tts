@@ -1,4 +1,5 @@
 from json import dumps
+from shutil import copy
 from exceptions import ErrorHandler
 from consts import MAX_RETRY
 from utils import ToServer, Trans, merge, time_fmt
@@ -44,6 +45,7 @@ class Main:
                 logger.error(retry)
                 for chap in retry:
                     d=chap.get_dict()
+                    copy("fail.mp3",self.optDir+'/'+chap.title)
                     ret = post("http://127.0.0.1:8080/main/retry/add",json=d)
                     ret.raise_for_status()
                     assert ret.json()["IsSuccess"]

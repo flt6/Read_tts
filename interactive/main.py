@@ -15,16 +15,16 @@ class Main:
         self.app = ToApp()
         logger.info("Class 'Main' initialized.")
 
-    def interactive(self,typ=1):
+    def interactive(self):
         logger.debug("Getting shelf")
         shelf = self.app.get_shelf()
         book = self.app.choose_book(shelf)
-        if typ ==1:
+        if self.typ ==1:
             area= self.app.choose_area(book)
-        elif typ ==2:
+        elif self.typ ==2:
             area= self.app.choose_single(book)
         else:
-            e=ValueError("Invalid `typ` %d"%typ)
+            e=ValueError("Invalid `typ` %d"%self.typ)
             ErrorHandler(e,"Main",logger,exit=True,wait=True)()
             raise AssertionError("This should never be executed.")
         return book,area
@@ -85,25 +85,35 @@ class Main:
             cnt,reasons = ser.get_fail()
             if cnt!=0:
                 logger.error("Download failed for %d times"%cnt)
-                logger.info("Reasons:\n%s"%"\n".join(reasons))
+                logger.info("Reasons:")
+                for i in reasons:
+                    logger.info(i.replace("\\n","\n"))
             ser.progress()
             sleep(5)
         ser.clean()
         # compress
         logger.info("compressing")
-        ret = ser.pack(end)
+        if self.typ == 2:
+            fix = True
+        else:
+            fix = False
+        ret = ser.pack(end,fix)
         if ret is None:
             logger.error("Failed to packs")
         else:
             logger.info("Success compress")
         # Output
         logger.info("Retry list:")
-        logger.info(str(ser.get_retry()))
+        retry=ser.get_retry()
+        for chap in retry:
+            logger.info("ID: %03d, title: %s"%(chap.idx,chap.title))
+        logger.info("For fix mode: %s"% ' '.join([str(i.idx) for i in retry]))
         logger.info("Request Link:")
         logger.info("http://127.0.0.1:8080/pack/getfile")
 
     def __call__(self, typ: int):
-        book,area = self.interactive(typ)
+        self.typ = typ
+        book,area = self.interactive()
         chaps = self.dealApp(book,area)
         self.server(chaps)
 

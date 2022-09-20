@@ -96,7 +96,7 @@ class ToApp:
     
     def choose_single(self,book):
         chaps=input("chapters(eg: '1 2 3'): ").split(" ")
-        return [int(i) for i in chaps]
+        return list({int(i) for i in chaps})
 
     def get_charpter_list(self, book: Book):
         url = consts.GET_CHAPTER_LIST
@@ -255,8 +255,8 @@ class ConnectServer:
             return cls.RUNNING
 
     @classmethod
-    def pack(cls, id: list[str]):
-        cls.check(get(SER+"/path/merge", data=json.dumps(id)))
+    def pack(cls, id: list[str],fix=False):
+        cls.check(get(SER+"/path/merge", data=json.dumps(id),params={"clean": not(fix)}))
         cls.check(get(SER+"/pack/start"))
         ret = cls.check(get(SER+"/pack/available"))
         if not isinstance(ret, dict):

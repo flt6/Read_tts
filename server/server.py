@@ -12,6 +12,7 @@ from shutil import copy
 from pickle import dumps, dump
 
 from os import mkdir, listdir
+from os.path import isdir
 from re import search
 
 from typing import Optional
@@ -116,10 +117,12 @@ def main_retry_get():
 # ------------------------------------------------
 
 @app.get("/path/merge")
-def pack_merge(ids: list[str]):
+def pack_merge(ids: list[str],clean: bool = True):
     try:
-        delete("Output")
-        mkdir("Output")
+        if clean:
+            delete("Output")
+        if not isdir("Output"):
+            mkdir("Output")
         for id in ids:
             dir = f"Output_{id}"
             for file in listdir(dir):
@@ -276,7 +279,10 @@ def log(typ: str, delete: Optional[bool] = True):
         open(f"logs/{typ}.log", "w").close()
     return t
 
-if __name__ == '__main__':
+def run_server():
     run(app,host="0.0.0.0",port=8080)
+
+if __name__ == '__main__':
+    run_server()
 # ---------------------------------------------------
 # uvicorn server:app --host 0.0.0.0 --port 8080

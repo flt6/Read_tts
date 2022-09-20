@@ -55,8 +55,9 @@ class Log(Logger):
             self._log(CRITICAL, text, args,
                       exc_info=exc_info, **kwargs)
 
-    def _log(self, level, msg, args, exc_info=None, extra=None, stack_info=False, stacklevel=1):
-        super()._log(level, msg, args, None, extra, stack_info, stacklevel)
+    def _log(self, level, msg:str, args, exc_info=None, extra=None, stack_info=False, stacklevel=1):
+        for line in msg.splitlines():
+            super()._log(level, line, args, None, extra, stack_info, stacklevel)
         if exc_info:
             print(self._fmt(format_exc(), level))
             for line in format_exc().splitlines():
@@ -73,7 +74,6 @@ class Log(Logger):
         return d[level]+text+"\033[0m"
 
     def gen_handle(self) -> None:
-        # fmt = Formatter("%(asctime)s - %(levelname)s - %(funcName)s: %(message)s")
         fmt = Formatter(
             "%(asctime)s - %(levelname)8s - %(name)s: %(message)s")
 
