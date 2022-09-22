@@ -1,25 +1,58 @@
 from main import main
 from requests import get
 from exceptions import ErrorHandler
-from consts import SERVER
 from log import getLogger
+from utils import ToApp
 from os import system
+from re import search
 import platform
 
-help='''
+def serverIP():
+    print("IP:")
+    url = input(">>> ")
+    bgn = search(r"^((http)|(https)):\/\/",url)
+    if bgn is None:
+        print("No http or https found. Auto added `http://`")
+        url = "http://"+url
+    if url[-1] == "/":
+        print("Do not type '/' at the end of url. Auto removed.")
+        url = url[:-1]
+    with open("server_ip.conf","w") as f:
+        f.write(url)
+
+try:
+    from consts import SERVER
+except AssertionError:
+    print("Server ip is not available!")
+    serverIP()
+    print("Please restart.")
+    input("-------------------------------")
+    exit(1)
+
+help=f'''
 Interactive command window for Read TTS
+Now server ip: {SERVER}
 Input number to choose function
 1. Start basic App
 2. Start with fix mode
 3. Clean server files
 4. Get log files from server
 5. Clean local log files
-6. Exit
+6. Check ip config
+7. Modify ip
+8. Exit
 '''
+
+
+
 def console_main():
     try:
         print(help)
-        mode=int(input(">>> "))
+        try:
+            mode=int(input(">>> "))
+        except ValueError:
+            print("Invalid input")
+            return True
         print("----------------------------------------")
 
         if mode == "":
@@ -62,6 +95,27 @@ def console_main():
             open("logs/error.log","w").close()
             print("Success.")
         elif mode == 6:
+            log = getLogger("Console")
+            log.info("Start APP request test.")
+            ToApp(ToApp.CHECKIP)
+            log.info("Start Server test.")
+            try:
+                ret = get(SERVER+"/main/clean")
+                if ret.status_code != 200:
+                    print("Server test failed: %s" % ret.status_code)
+                else:
+                    log.info("Server test succeeded")
+            except Exception as e:
+                log.error("Server test failed: %s" % e)
+        elif mode == 7:
+            print("1. Server IP")
+            print("2. APP IP")
+            typ = int(input(">>> "))
+            if typ == 1:
+                serverIP()
+            elif typ == 2:
+                ToApp(ToApp.SAVEIP)
+        elif mode == 8:
             return False
         else:
             print("`Mode` is invalid.")
@@ -81,6 +135,6 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         exit(1)
     except Exception as e:
-        ErrorHandler(e,"console")
+        ErrorHandler(e,"console")()
         
     

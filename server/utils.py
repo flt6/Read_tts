@@ -81,8 +81,8 @@ class Trans:
         return content
 
     def title(self, chap: Chapter):
-        title = sub(r'''[\*\/\\\|\<\>\? \:\.\'\"\!]''', "", chap.title)
-        title = str(chap.idx)+"_"+title
+        title = sub(r'''[\*\/\\\|\<\>\? \:\.\'\"\!\s]''', "", chap.title)
+        title = "%03d"%chap.idx+"_"+title
         return title
 
     def __call__(self, chap: Chapter):

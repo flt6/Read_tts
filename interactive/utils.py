@@ -46,10 +46,21 @@ def req(param, caller="Requester", logger=None,
 
 
 class ToApp:
-    def __init__(self):
+    CHECKIP = 0b001
+    GETIP   = 0b010
+    SAVEIP  = 0b100
+    def __init__(self,mode=0b111):
+        '''
+            @param mode:
+                use `|` to set mode based on 0
+        '''
         self.logger = getLogger("ToApp")
-        self.getIP()
-        self.saveIP()
+        if mode != 0b111:
+            self.logger.warning("ToApp is initialized with `Not run` mode, which means `ip` may not be available.")
+        if mode & self.CHECKIP == 1:
+            self.getIP(mode)
+        if mode & self.SAVEIP:
+            self.saveIP()
 
     def get_shelf(self):
         '''
@@ -136,7 +147,7 @@ class ToApp:
         except Exception as e:
             ErrorHandler(e, "testIP", self.logger, 2)()
 
-    def getIP(self):
+    def getIP(self,mode):
         if isfile("ip.conf"):
             try:
                 with open("ip.conf", "r") as f:
@@ -148,6 +159,8 @@ class ToApp:
             except Exception as e:
                 ErrorHandler(e, "ToApp", self.logger)()
             self.logger.debug("_testIP() returned False")
+        if mode&self.GETIP == 0:
+            return
         while True:
             ip = input("ip: ")
             self.logger.debug("Set ip=%s" % ip)
@@ -274,6 +287,18 @@ class ConnectServer:
     def progress(cls):
         done, total = cls.check(get(SER+"/progress/get"))
         assert isinstance(done, int) and isinstance(total, int)
+        if total == 0:
+            print("Running...                       ", end='\r')
+        else:
+            print("Running %03d/%03d  %*.01f%%" %
+                  (done, total, 5, (done/total)*100), end='\r')
+    
+    @classmethod
+    def progress_new(cls):
+        done, total = cls.check(get(SER+"/progress/get"))
+        assert isinstance(done, int) and isinstance(total, int)
+        if cls.bar is None:
+            cls.bar = alive_bar()
         if total == 0:
             print("Running...                       ", end='\r')
         else:

@@ -66,6 +66,7 @@ class ErrorHandler:
         self.src = src
         self.exit = exit
         self.wait = wait
+        self.call = False
 
     def show(self, message: Any):
         level = self.level
@@ -89,8 +90,15 @@ class ErrorHandler:
             if self.wait:
                 input("Pause (input enter to exit)")
             exit(1)
+    
+    def __del__(self):
+        if not self.call:
+            getLogger("ErrorHandler").error("ErrorHandler is initialized but not called.")
+            getLogger("ErrorHandler").error(f"from: {src}")
+            raise RuntimeWarning("ErrorHandler is initialized but not called.")
 
     def __call__(self):
+        self.call = True
         err = self.err
         msg = ""
         if isinstance(err, AppError):
