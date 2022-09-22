@@ -1,2 +1,3 @@
-nuitka --follow-imports --include-package-data=websockets --noinclude-IPython-mode=nofollow --standalone --include-data-file="grapheme_break_property.json"=grapheme\data\ --onefile main.py
+nuitka --follow-imports --show-progress --noinclude-IPython-mode=nofollow --standalone --include-data-file="grapheme_break_property.json"=grapheme\data\ --onefile interactive/console.py
+nuitka --follow-imports --show-progress --noinclude-IPython-mode=nofollow --standalone --include-data-file="server\fail.mp3"=fail.mp3 --include-data-file="server\7z.dll"=7z.dll --include-data-file="server\7za.exe"=7za.exe --onefile server\server.py
 pause

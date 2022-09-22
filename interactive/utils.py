@@ -46,21 +46,29 @@ def req(param, caller="Requester", logger=None,
 
 
 class ToApp:
-    CHECKIP = 0b001
-    GETIP   = 0b010
-    SAVEIP  = 0b100
-    def __init__(self,mode=0b111):
+    CHECKIP = 0b0001
+    GETIP   = 0b0010
+    SAVEIP  = 0b0100
+    AUTO    = 0b1000
+    def __init__(self,mode=0b1001):
         '''
             @param mode:
                 use `|` to set mode based on 0
         '''
         self.logger = getLogger("ToApp")
-        if mode != 0b111:
+        if mode != self.AUTO:
             self.logger.warning("ToApp is initialized with `Not run` mode, which means `ip` may not be available.")
         if mode & self.CHECKIP == 1:
-            self.getIP(mode)
+            rst = self.checkIP()
+            if not rst:
+                self.logger.error("Check IP failed.")
+                mode |= self.GETIP|self.SAVEIP & (mode & self.AUTO)
+            else:
+                self.logger.info("Check IP Success.")
+        if mode & self.GETIP == 1:
+            self.getIP()
         if mode & self.SAVEIP:
-            self.saveIP()
+            self.saveIP(self.ip)
 
     def get_shelf(self):
         '''
@@ -136,7 +144,7 @@ class ToApp:
             self.logger.debug("Regular Expression match failed.")
             return False
         try:
-            res = get(consts.GET_SHELF.format(ip))
+            res = get(consts.GET_SHELF.format(ip),timeout=2)
             self.logger.debug("HTTP connect status_code=%d" % res.status_code)
             if res.status_code != 200:
                 raise ServerError(res.status_code)  # type: ignore
@@ -147,7 +155,7 @@ class ToApp:
         except Exception as e:
             ErrorHandler(e, "testIP", self.logger, 2)()
 
-    def getIP(self,mode):
+    def checkIP(self):
         if isfile("ip.conf"):
             try:
                 with open("ip.conf", "r") as f:
@@ -155,12 +163,12 @@ class ToApp:
                     self.logger.debug("Set ip=%s" % ip)
                     if self._testIP(ip):
                         self.ip = ip
-                        return
+                        return True
             except Exception as e:
                 ErrorHandler(e, "ToApp", self.logger)()
             self.logger.debug("_testIP() returned False")
-        if mode&self.GETIP == 0:
-            return
+        return False
+    def getIP(self):
         while True:
             ip = input("ip: ")
             self.logger.debug("Set ip=%s" % ip)
@@ -173,7 +181,7 @@ class ToApp:
                 self.logger.debug("_testIP() returned False")
                 print("Can't connect to APP.")
 
-    def saveIP(self):
+    def saveIP(self,ip:str):
         if isdir("ip.conf"):
             print("Directory 'ip.conf' already exists.")
             print("Please delete it first, or IP can't be saved.")
@@ -182,7 +190,7 @@ class ToApp:
             return
         try:
             with open("ip.conf", "w") as f:
-                f.write(self.ip)
+                f.write(ip)
         except Exception as e:
             ErrorHandler(e, "ToApp")()
 

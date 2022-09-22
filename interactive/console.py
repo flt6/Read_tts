@@ -1,8 +1,4 @@
-from main import main
 from requests import get
-from exceptions import ErrorHandler
-from log import getLogger
-from utils import ToApp
 from os import system
 from re import search
 import platform
@@ -11,17 +7,25 @@ def serverIP():
     print("IP:")
     url = input(">>> ")
     bgn = search(r"^((http)|(https)):\/\/",url)
+    port = search(r"(?<=(\:))\d+",url)
     if bgn is None:
         print("No http or https found. Auto added `http://`")
         url = "http://"+url
     if url[-1] == "/":
         print("Do not type '/' at the end of url. Auto removed.")
         url = url[:-1]
+    if port is None:
+        print("Port is not specified. If not 80, please run modify again.")
+    
     with open("server_ip.conf","w") as f:
         f.write(url)
 
 try:
+    from exceptions import ErrorHandler
+    from log import getLogger
+    from utils import ToApp
     from consts import SERVER
+    from main import main
 except AssertionError:
     print("Server ip is not available!")
     serverIP()
@@ -29,9 +33,9 @@ except AssertionError:
     input("-------------------------------")
     exit(1)
 
-help=f'''
+help='''
 Interactive command window for Read TTS
-Now server ip: {SERVER}
+Now server ip: {}
 Input number to choose function
 1. Start basic App
 2. Start with fix mode
@@ -47,7 +51,7 @@ Input number to choose function
 
 def console_main():
     try:
-        print(help)
+        print(help.format(SERVER))
         try:
             mode=int(input(">>> "))
         except ValueError:
@@ -114,7 +118,7 @@ def console_main():
             if typ == 1:
                 serverIP()
             elif typ == 2:
-                ToApp(ToApp.SAVEIP)
+                ToApp(ToApp.SAVEIP|ToApp.GETIP)
         elif mode == 8:
             return False
         else:

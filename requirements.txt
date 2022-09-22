@@ -1,3 +1,4 @@
 requests
 alive_progress
 aspeak
+fastapi[all]

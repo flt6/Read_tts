@@ -4,6 +4,9 @@
 *.7z
 *.conf
 *.log
+*.build
+*.dist
+*.onefile-build
 Output*
 logs
 DEBUG
