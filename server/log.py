@@ -70,13 +70,13 @@ class Log(Logger):
 
     def _fmt(self, text, level):
         d = {
-            DEBUG:    Fore.WHITE,
-            INFO:     Fore.LIGHTBLUE_EX,
-            WARNING:  Fore.YELLOW,
-            ERROR:    Fore.RED,
-            CRITICAL: Back.RED
+            DEBUG:    "\033[1;37m",
+            INFO:     "\033[1;34m",
+            WARNING:  "\033[1;32m",
+            ERROR:    "\033[1;31m",
+            CRITICAL: "\033[1;41m"
         }
-        return d[level]+text
+        return d[level]+text+"\033[0m"
 
     def gen_handle(self) -> None:
         fmt = Formatter(
