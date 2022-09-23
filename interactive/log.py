@@ -2,6 +2,7 @@ from logging import Logger, Formatter, FileHandler
 from logging import DEBUG, INFO, WARNING, ERROR, CRITICAL
 from traceback import format_exc
 from os import path, mkdir
+from colorama import Fore,Back,init
 import consts
 
 
@@ -9,6 +10,7 @@ class Log(Logger):
     def __init__(self, name, show=True, debug=False) -> None:
         '''Provide log function'''
         super().__init__(name, DEBUG if debug else INFO)
+        init(autoreset=True)
         self.isdebug = debug
         if not path.exists("logs"):
             mkdir("logs")
@@ -55,7 +57,9 @@ class Log(Logger):
             self._log(CRITICAL, text, args,
                       exc_info=exc_info, **kwargs)
 
-    def _log(self, level, msg:str, args, exc_info=None, extra=None, stack_info=False, stacklevel=1):
+    def _log(self, level, msg, args, exc_info=None, extra=None, stack_info=False, stacklevel=1):
+        if not isinstance(msg, str):
+            msg = str(msg)
         for line in msg.splitlines():
             super()._log(level, line, args, None, extra, stack_info, stacklevel)
         if exc_info:
@@ -65,13 +69,13 @@ class Log(Logger):
 
     def _fmt(self, text, level):
         d = {
-            DEBUG:    "\033[1;37m",
-            INFO:     "\033[1;34m",
-            WARNING:  "\033[1;32m",
-            ERROR:    "\033[1;31m",
-            CRITICAL: "\033[1;41m"
+            DEBUG:    Fore.WHITE,
+            INFO:     Fore.LIGHTBLUE_EX,
+            WARNING:  Fore.YELLOW,
+            ERROR:    Fore.RED,
+            CRITICAL: Back.RED
         }
-        return d[level]+text+"\033[0m"
+        return d[level]+text
 
     def gen_handle(self) -> None:
         fmt = Formatter(
@@ -99,4 +103,8 @@ class Log(Logger):
 
 
 def getLogger(name: str = "Default") -> Log:
-    return Log(name=name, show=consts.TO_CONSOLE, debug=consts.DEBUG).get_logger()
+    return Log(
+        name=name,
+        show=consts.TO_CONSOLE,
+        debug=consts.DEBUG,
+    ).get_logger()

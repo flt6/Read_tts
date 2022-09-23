@@ -42,6 +42,8 @@ class ErrorHandler:
                 3: exception
             @param exit:
                 Whether exit the programm due to the error.
+            @param wait:
+                Whether wait when exit. (Only available when exit=True)
         '''
         if not isinstance(err, BaseException):
             raise TypeError(
@@ -59,6 +61,7 @@ class ErrorHandler:
         self.lgcri = lg.critical
         self.lgexp = lg.exception
         self.lgdbg = lg.debug
+        self.lgwar = lg.warning
 
         self.dbg = consts.DEBUG
         self.level = level
@@ -94,7 +97,7 @@ class ErrorHandler:
     def __del__(self):
         if not self.call:
             getLogger("ErrorHandler").error("ErrorHandler is initialized but not called.")
-            getLogger("ErrorHandler").error(f"from: {src}")
+            getLogger("ErrorHandler").error(f"from: {self.src}")
             raise RuntimeWarning("ErrorHandler is initialized but not called.")
 
     def __call__(self):
@@ -122,15 +125,6 @@ class ErrorHandler:
             msg = "Permission denied!"
         elif isinstance(err, FileExistsError):
             msg = "File exists!"+err.args[0]
-        elif self.src == "AsyncReq":
-            msg = "Async request error!\n"
-            if isinstance(err, RuntimeError):
-                msg += f"RE: {err}"
-            else:
-                msg += "Unknown error\n"
-                msg += str(type(err))+":"
-                msg += str(err)
-
         else:
             msg = "Unknown error!"
             self.level = 2

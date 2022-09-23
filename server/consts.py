@@ -4,7 +4,6 @@ from os import path
 DEBUG = True
 TO_CONSOLE = True
 SHOW_DBG = False
-DISABE_PAUSE=True
 
 SSML_MODEL = '''<speak xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="http://www.w3.org/2001/mstts" xmlns:emo="http://www.w3.org/2009/10/emotionml" version="1.0" xml:lang="en-US">
     <voice name="zh-CN-YunyeNeural">

@@ -44,6 +44,9 @@ class ErrorHandler:
                 3: exception
             @param exit:
                 Whether exit the programm due to the error.
+            @param wait:
+                **Disabled**
+                Whether wait when exit. (Only available when exit=True)
         '''
         if not isinstance(err, BaseException):
             raise TypeError(
@@ -68,8 +71,7 @@ class ErrorHandler:
         self.err = err
         self.src = src
         self.exit = exit
-        self.wait = wait
-        self.used=False
+        self.call = False
 
     def show(self, message: Any):
         level = self.level
@@ -90,17 +92,16 @@ class ErrorHandler:
 
     def quit(self):
         if self.exit:
-            if self.wait and not consts.DISABE_PAUSE:
-                input("Pause (input enter to exit)")
             exit(1)
     
     def __del__(self):
-        if not self.used:
-            self.lgwar("`ErrorHandler` registered but not used.")
-            raise RuntimeWarning("`ErrorHandler` registered but not used.")
+        if not self.call:
+            getLogger("ErrorHandler").error("ErrorHandler is initialized but not called.")
+            getLogger("ErrorHandler").error(f"from: {self.src}")
+            raise RuntimeWarning("ErrorHandler is initialized but not called.")
 
     def __call__(self):
-        self.used=True
+        self.call = True
         err = self.err
         msg = ""
         if isinstance(err, AppError):
@@ -127,7 +128,6 @@ class ErrorHandler:
         elif isinstance(err, KeyboardInterrupt):
             msg = "KeyboardInterrupt!"
             self.exit = True
-            self.wait = False
         elif isinstance(err, PermissionError):
             msg = "Permission denied!"
         elif isinstance(err, FileExistsError):
