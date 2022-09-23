@@ -1,6 +1,6 @@
 from model import Book
 from log import getLogger
-from consts import MAX_RETRY
+from consts import MAX_RETRY,SERVER
 from utils import ToApp, ConnectServer
 from model import Chapter
 from exceptions import ErrorHandler
@@ -12,7 +12,7 @@ logger = getLogger("Main")
 
 class Main:
     def __init__(self):
-        self.app = ToApp()
+        self.app = ToApp()  # type: ignore
         logger.info("Class 'Main' initialized.")
 
     def interactive(self):
@@ -103,13 +103,14 @@ class Main:
         else:
             logger.info("Success compress")
         # Output
-        logger.info("Retry list:")
         retry=ser.get_retry()
-        for chap in retry:
-            logger.info("ID: %03d, title: %s"%(chap.idx,chap.title))
-        logger.info("For fix mode: %s"% ' '.join([str(i.idx) for i in retry]))
+        if retry != []:
+            logger.info("Retry list:")
+            for chap in retry:
+                logger.info("ID: %03d, title: %s"%(chap.idx,chap.title))
+            logger.info("For fix mode: %s"% ' '.join([str(i.idx) for i in retry]))
         logger.info("Request Link:")
-        logger.info("http://127.0.0.1:8080/pack/getfile")
+        logger.info(f"{SERVER}/pack/getfile")
 
     def __call__(self, typ: int):
         self.typ = typ
@@ -125,7 +126,7 @@ def main(typ:int):
     except BaseException as e:
         logger.critical("Uncaught exception")
         logger.critical(format_exc())
-        ErrorHandler(e, "UNCAUGHT", logger, 3, True, True)
+        ErrorHandler(e, "UNCAUGHT", logger, 3, True, True)()
 
 if __name__ == '__main__':
     main(1)

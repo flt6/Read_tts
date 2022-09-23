@@ -4,6 +4,7 @@ from re import search
 import platform
 
 def serverIP():
+    global SERVER
     print("IP:")
     url = input(">>> ")
     bgn = search(r"^((http)|(https)):\/\/",url)
@@ -15,10 +16,12 @@ def serverIP():
         print("Do not type '/' at the end of url. Auto removed.")
         url = url[:-1]
     if port is None:
-        print("Port is not specified. If not 80, please run modify again.")
+        print("Port is not specified. If not 8080, please run modify again.")
+        url = url + ":8080"
     
     with open("server_ip.conf","w") as f:
         f.write(url)
+    SERVER = url
 
 try:
     from exceptions import ErrorHandler
@@ -60,7 +63,7 @@ def console_main():
         print("----------------------------------------")
 
         if mode == "":
-            print("Id not found")
+            print("Invalid input")
             return
         if mode == 1:
             main(1)
@@ -122,7 +125,7 @@ def console_main():
         elif mode == 8:
             return False
         else:
-            print("`Mode` is invalid.")
+            print("Invalid input")
     except ConnectionRefusedError:
         getLogger("Console").error("Server is not available.")
         getLogger("Console").debug("Trace",exc_info=True)
