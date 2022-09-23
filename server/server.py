@@ -2,7 +2,7 @@ from fastapi import FastAPI, Body
 from starlette.responses import FileResponse
 from uvicorn import run
 
-from utils import delete
+from utils import delete,reConcat
 from model import Chapter, ChapterModel
 from log import getLogger
 
@@ -268,6 +268,14 @@ def redelete():
     except Exception:
         return {"IsSuccess": False, "err": format_exc()}
 
+@app.get("/reconcat")
+def reconcat():
+    try:
+        reConcat()
+        return {"IsSuccess": True}
+    except Exception:
+
+        return {"IsSuccess": False, "err": format_exc()}
 
 @app.get("/log")
 def log(typ: str, delete: Optional[bool] = True):

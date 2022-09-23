@@ -5,7 +5,7 @@ from os.path import isfile, isdir
 from shutil import rmtree
 from json import dumps
 from uuid import uuid1
-from os import mkdir, remove
+from os import mkdir, remove, listdir
 from re import sub
 
 from model import Chapter
@@ -189,6 +189,35 @@ def _merge(dir: str, logger: Log, ch: list[Chapter], name: str, is_remove: bool)
     except Exception as e:
         ErrorHandler(e, "merge", logger)()
 
+def _concat(tmp:list[str],name:str):
+    paths = ["Output/"+i for i in tmp]
+    cmd = [
+        'ffmpeg',
+        '-hide_banner',
+        '-i',
+        f'concat:{"|".join(paths)}',
+        '-c',
+        'copy',
+        '-y',
+        "Output/"+name
+    ]
+    if paths != []:
+        print(cmd)
+        run(cmd)
+        for f in paths:
+            remove(f)
+
+def reConcat():
+    l = listdir("Output")
+    name = ""
+    tmp:list[str] = []
+    for file in l:
+        if " (0).mp3" in file:
+            _concat(tmp,name)
+            tmp = []
+            name = file.replace(" (0).mp3", ".mp3")
+        tmp.append(file)
+    _concat(tmp,name)
 
 def merge(chapters: list[Chapter], dir: str, is_remove=True):
     logger = getLogger("Merge")

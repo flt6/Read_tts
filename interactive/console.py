@@ -1,4 +1,5 @@
 from requests import get
+from utils import ConnectServer
 from os import system
 from re import search
 import platform
@@ -40,14 +41,23 @@ help='''
 Interactive command window for Read TTS
 Now server ip: {}
 Input number to choose function
+===========run===========
+----------basic----------
 1. Start basic App
+----------fix------------
 2. Start with fix mode
-3. Clean server files
-4. Get log files from server
-5. Clean local log files
-6. Check ip config
-7. Modify ip
-8. Exit
+3. Fix concat
+--------settings---------
+4. set ip
+=========tools===========
+---------cleanup---------
+5. Clean server files
+6. Clean local log files
+----------check----------
+7. Check ip config
+8. Get log files from server
+
+0. Exit
 '''
 
 
@@ -66,13 +76,59 @@ def console_main():
             print("Invalid input")
             return
         if mode == 1:
+            # basic mode
             main(1)
+
         elif mode == 2:
+            # fix mode
             main(2)
+
         elif mode == 3:
+            # reconcat
+            ser = ConnectServer
+            ser.concat()
+            ser.pack()
+            print("Success")
+            
+        elif mode == 4:
+            # set ip
+            print("1. Server IP")
+            print("2. APP IP")
+            typ = int(input(">>> "))
+            if typ == 1:
+                serverIP()
+            elif typ == 2:
+                ToApp(ToApp.SAVEIP|ToApp.GETIP)
+
+        elif mode == 5:
+            # clean server
             get(SERVER+"/cleanup")
             print("Success")
-        elif mode == 4:
+            
+        elif mode == 6:
+            # clean local
+            open("logs/debug.log","w").close()
+            open("logs/info.log","w").close()
+            open("logs/error.log","w").close()
+            print("Success.")
+            
+        elif mode == 7:
+            # check
+            log = getLogger("Console")
+            log.info("Start APP request test.")
+            ToApp(ToApp.CHECKIP)
+            log.info("Start Server test.")
+            try:
+                ret = get(SERVER+"/main/clean")
+                if ret.status_code != 200:
+                    print("Server test failed: %s" % ret.status_code)
+                else:
+                    log.info("Server test succeeded")
+            except Exception as e:
+                log.error("Server test failed: %s" % e)
+
+        elif mode == 8:
+            # get log file
             print("Which level of log is needed to get?")
             print("Available:")
             print("debug(Default), info, error")
@@ -96,33 +152,8 @@ def console_main():
                 l=get(SERVER+"/log",params={"typ":level,"delete":delete}).json()
                 with open(name+".log","w",encoding="utf-8") as f:
                     f.writelines(l)
-        elif mode == 5:
-            open("logs/debug.log","w").close()
-            open("logs/info.log","w").close()
-            open("logs/error.log","w").close()
-            print("Success.")
-        elif mode == 6:
-            log = getLogger("Console")
-            log.info("Start APP request test.")
-            ToApp(ToApp.CHECKIP)
-            log.info("Start Server test.")
-            try:
-                ret = get(SERVER+"/main/clean")
-                if ret.status_code != 200:
-                    print("Server test failed: %s" % ret.status_code)
-                else:
-                    log.info("Server test succeeded")
-            except Exception as e:
-                log.error("Server test failed: %s" % e)
-        elif mode == 7:
-            print("1. Server IP")
-            print("2. APP IP")
-            typ = int(input(">>> "))
-            if typ == 1:
-                serverIP()
-            elif typ == 2:
-                ToApp(ToApp.SAVEIP|ToApp.GETIP)
-        elif mode == 8:
+        elif mode == 0:
+            # exit
             return False
         else:
             print("Invalid input")
