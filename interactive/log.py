@@ -2,7 +2,6 @@ from logging import Logger, Formatter, FileHandler
 from logging import DEBUG, INFO, WARNING, ERROR, CRITICAL
 from traceback import format_exc
 from os import path, mkdir
-from colorama import Fore,Back,init
 import consts
 
 
@@ -10,7 +9,6 @@ class Log(Logger):
     def __init__(self, name, show=True, debug=False) -> None:
         '''Provide log function'''
         super().__init__(name, DEBUG if debug else INFO)
-        init(autoreset=True)
         self.isdebug = debug
         if not path.exists("logs"):
             mkdir("logs")
@@ -69,13 +67,13 @@ class Log(Logger):
 
     def _fmt(self, text, level):
         d = {
-            DEBUG:    Fore.WHITE,
-            INFO:     Fore.LIGHTBLUE_EX,
-            WARNING:  Fore.YELLOW,
-            ERROR:    Fore.RED,
-            CRITICAL: Back.RED
+            DEBUG:    "\033[1;37m",
+            INFO:     "\033[1;34m",
+            WARNING:  "\033[1;32m",
+            ERROR:    "\033[1;31m",
+            CRITICAL: "\033[1;41m"
         }
-        return d[level]+text
+        return d[level]+text+"\033[0m"
 
     def gen_handle(self) -> None:
         fmt = Formatter(
