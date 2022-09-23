@@ -97,8 +97,9 @@ class Main:
             fix = True
         else:
             fix = False
-        ret = ser.pack(end,fix)
-        if ret is None:
+        ser.merge(end,fix)
+        ret = ser.pack()
+        if not ret:
             logger.error("Failed to packs")
         else:
             logger.info("Success compress")

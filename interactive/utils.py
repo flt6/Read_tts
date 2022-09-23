@@ -64,7 +64,7 @@ class ToApp:
         # `mode` dealing is based on binary calculation. 
         self.logger = getLogger("ToApp")
         self.logger.debug(mode)
-        if mode != self.AUTO:
+        if not chk(mode & self.AUTO):
             self.logger.warning("ToApp is initialized with `Not run` mode, which means `ip` may not be available.")
         if chk(mode & self.CHECKIP):
             rst = self.checkIP()
@@ -285,37 +285,40 @@ class ConnectServer:
             return cls.RUNNING
 
     @classmethod
-    def pack(cls, id: list[str],fix=False):
+    def merge(cls, id: list[str],fix=False):
         cls.check(get(SER+"/path/merge", data=json.dumps(id),params={"clean": not(fix)}))
+        
+    @classmethod
+    def pack(cls):
         cls.check(get(SER+"/pack/start"))
         ret = cls.check(get(SER+"/pack/available"))
         if not isinstance(ret, dict):
-            return None
+            return False
         while ret["msg"] == "Available":
             if ret["msg"] == "Error":
                 getLogger("Server").error("Pack Failed.")
-                cls.pack(id)
+                cls.pack()
             elif ret["msg"] == "NotFound":
                 getLogger("Server").error("Id not found.")
-                return None
-        return 0
+                return False
+            ret = cls.check(get(SER+"/pack/available"))
+            if not isinstance(ret, dict): return False
+        return True
+    
+    @classmethod
+    def concat(cls):
+        ret = cls.check(get(SER+"/reconcat"))
+        assert isinstance(ret, dict)
+        if ret["IsSuccess"]:
+            getLogger("Server").info("Concat Success.")
+        else:
+            getLogger("Server").error("Concat Failed.")
+            getLogger("Server").debug(ret["err"])
 
     @classmethod
     def progress(cls):
         done, total = cls.check(get(SER+"/progress/get"))
         assert isinstance(done, int) and isinstance(total, int)
-        if total == 0:
-            print("Running...                       ", end='\r')
-        else:
-            print("Running %03d/%03d  %*.01f%%" %
-                  (done, total, 5, (done/total)*100), end='\r')
-    
-    @classmethod
-    def progress_new(cls):
-        done, total = cls.check(get(SER+"/progress/get"))
-        assert isinstance(done, int) and isinstance(total, int)
-        if cls.bar is None:
-            cls.bar = alive_bar()
         if total == 0:
             print("Running...                       ", end='\r')
         else:
