@@ -44,6 +44,12 @@ def req(param, caller="Requester", logger=None,
         return None
     return json
 
+def chk(num:int):
+    o=0
+    while num:
+        o|=num&1
+        num>>=1
+    return o
 
 class ToApp:
     CHECKIP = 0b0001
@@ -55,19 +61,22 @@ class ToApp:
             @param mode:
                 use `|` to set mode based on 0
         '''
+        # `mode` dealing is based on binary calculation. 
         self.logger = getLogger("ToApp")
+        self.logger.debug(mode)
         if mode != self.AUTO:
             self.logger.warning("ToApp is initialized with `Not run` mode, which means `ip` may not be available.")
-        if mode & self.CHECKIP == 1:
+        if chk(mode & self.CHECKIP):
             rst = self.checkIP()
             if not rst:
                 self.logger.error("Check IP failed.")
-                mode |= self.GETIP|self.SAVEIP & (mode & self.AUTO)
+                mode |= self.GETIP|self.SAVEIP * chk(mode & self.AUTO)
             else:
                 self.logger.info("Check IP Success.")
-        if mode & self.GETIP == 1:
+        if chk(mode & self.GETIP):
+            self.logger.debug("Get IP Start.")
             self.getIP()
-        if mode & self.SAVEIP:
+        if chk(mode & self.SAVEIP):
             self.saveIP(self.ip)
 
     def get_shelf(self):
@@ -144,7 +153,7 @@ class ToApp:
             self.logger.debug("Regular Expression match failed.")
             return False
         try:
-            res = get(consts.GET_SHELF.format(ip),timeout=2)
+            res = get(consts.GET_SHELF.format(ip),timeout=3)
             self.logger.debug("HTTP connect status_code=%d" % res.status_code)
             if res.status_code != 200:
                 raise ServerError(res.status_code)  # type: ignore
