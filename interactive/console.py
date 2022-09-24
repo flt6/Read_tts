@@ -1,5 +1,4 @@
 from requests import get
-from utils import ConnectServer
 from os import system
 from re import search
 import platform
@@ -23,11 +22,12 @@ def serverIP():
     with open("server_ip.conf","w") as f:
         f.write(url)
     SERVER = url
+    return url
 
 try:
     from exceptions import ErrorHandler
     from log import getLogger
-    from utils import ToApp
+    from utils import ToApp,ConnectServer
     from consts import SERVER
     from main import main
 except AssertionError:
