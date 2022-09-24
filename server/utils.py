@@ -5,6 +5,7 @@ from os.path import isfile, isdir
 from shutil import rmtree
 from json import dumps
 from uuid import uuid1
+from html import escape
 from os import mkdir, remove, listdir
 from re import sub
 
@@ -77,6 +78,7 @@ class Trans:
                 tem += lines[i]
                 tem += "\n"
                 i += 1
+            tem = escape(tem)
             content.append(consts.SSML_MODEL.format(tem))
         return content
 
