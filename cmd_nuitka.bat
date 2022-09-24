@@ -1,2 +1,1 @@
-nuitka --follow-imports --include-package-data=websockets --noinclude-IPython-mode=nofollow --standalone --include-data-file="grapheme_break_property.json"=grapheme\data\ --onefile main.py
-pause
+nuitka --follow-imports --noinclude-IPython-mode=nofollow --standalone --include-data-file="grapheme_break_property.json"=grapheme\data\  --include-data-file=fail.mp3=fail.mp3 --onefile main.py

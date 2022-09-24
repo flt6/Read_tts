@@ -6,3 +6,6 @@ DEBUG
 *.conf
 .vscode
 *.dmp
+*.onefile-build
+*.dist
+*.build
