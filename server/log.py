@@ -2,7 +2,6 @@ from logging import Logger, Formatter, FileHandler
 from logging import DEBUG, INFO, WARNING, ERROR, CRITICAL
 from traceback import format_exc
 from os import path, mkdir
-from colorama import Fore,Back,init
 import consts
 
 
@@ -10,7 +9,6 @@ class Log(Logger):
     def __init__(self, name, show=True, debug=False, show_dbg=True) -> None:
         '''Provide log function'''
         super().__init__(name, DEBUG if debug else INFO)
-        init(autoreset=True)
         self.isdebug = debug
         if not path.exists("logs"):
             mkdir("logs")
