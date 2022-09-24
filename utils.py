@@ -1,26 +1,24 @@
-from requests import get
-from requests.utils import quote  # type: ignore
-from subprocess import run, PIPE
-from log import getLogger, Log
 from alive_progress import alive_bar
+from subprocess import run, PIPE
+from requests.utils import quote  # type: ignore
+from requests import get
 from os.path import isfile, isdir
-from html import escape
 from os import mkdir, remove, listdir
 from re import sub, match, search
+from html import escape
 
 from model import Book, ChapterList, Chapter
-from tts import tts
+from log  import getLogger, Log
+from tts  import tts
 
+from requests.exceptions import RequestException
 from exceptions import ErrorHandler
 from exceptions import ServerError, AppError
-from requests.exceptions import RequestException
 
-
-import consts
 from azure.cognitiveservices.speech.speech import ResultFuture
 from azure.cognitiveservices.speech import SpeechSynthesisResult
 
-
+import consts
 
 def req(param, caller="Requester", logger=None,
         level=1, exit=False, wait=False):
@@ -44,12 +42,14 @@ def req(param, caller="Requester", logger=None,
         return None
     return json
 
-def chk(num:int):
-    o=0
+
+def chk(num: int):
+    o = 0
     while num:
-        o|=num&1
-        num>>=1
+        o |= num & 1
+        num >>= 1
     return o
+
 
 class ToApp:
     def __init__(self):
@@ -89,7 +89,7 @@ class ToApp:
         book = books[num]
         return book
 
-    def choose_area(self,book:Book):
+    def choose_area(self, book: Book):
         bgn = input(
             "From(%d: %s): " % (
                 book.idx,
@@ -99,9 +99,9 @@ class ToApp:
         bgn = book.idx if bgn == '' else int(bgn)
         to = int(input("To. "))
         return range(bgn, to)
-    
-    def choose_single(self,book):
-        chaps=input("chapters(eg: '1 2 3'): ").split(" ")
+
+    def choose_single(self):
+        chaps = input("chapters(eg: '1 2 3'): ").split(" ")
         return list({int(i) for i in chaps})
 
     def get_charpter_list(self, book: Book):
@@ -131,7 +131,7 @@ class ToApp:
             self.logger.debug("Regular Expression match failed.")
             return False
         try:
-            res = get(consts.GET_SHELF.format(ip),timeout=3)
+            res = get(consts.GET_SHELF.format(ip), timeout=3)
             self.logger.debug("HTTP connect status_code=%d" % res.status_code)
             if res.status_code != 200:
                 raise ServerError(res.status_code)  # type: ignore
@@ -203,7 +203,7 @@ class Trans:
 
     def title(self, chap: Chapter):
         title = sub(r'''[\*\/\\\|\<\>\? \:\.\'\"\!\s]''', "", chap.title)
-        title = "%03d"%chap.idx+"_"+title
+        title = "%03d" % chap.idx+"_"+title
         return title
 
     def __call__(self, chap: Chapter):
@@ -227,7 +227,7 @@ class ToServer:
         if not isdir(self.optDir):
             mkdir(self.optDir)
 
-    def _download(self, st, retry:set[Chapter], chapters, bar):
+    def _download(self, st, retry: set[Chapter], chapters, bar):
         for task, j in st:
             try:
                 ret = task.get()
@@ -308,7 +308,8 @@ def _merge(dir: str, logger: Log, ch: list[Chapter], name: str, is_remove: bool)
     except Exception as e:
         ErrorHandler(e, "merge", logger)()
 
-def _concat(tmp:list[str],name:str):
+
+def _concat(tmp: list[str], name: str):
     paths = ["Output/"+i for i in tmp]
     cmd = [
         'ffmpeg',
@@ -326,17 +327,19 @@ def _concat(tmp:list[str],name:str):
         for f in paths:
             remove(f)
 
+
 def reConcat():
     l = listdir("Output")
     name = ""
-    tmp:list[str] = []
+    tmp: list[str] = []
     for file in l:
         if " (0).mp3" in file:
-            _concat(tmp,name)
+            _concat(tmp, name)
             tmp = []
             name = file.replace(" (0).mp3", ".mp3")
         tmp.append(file)
-    _concat(tmp,name)
+    _concat(tmp, name)
+
 
 def merge(chapters: list[Chapter], dir: str, is_remove=True):
     logger = getLogger("Merge")
@@ -366,6 +369,7 @@ def time_fmt(time: float):
     sec = time % 60
     return "%02d:%02d:%02d" % (hour, min, sec)
 
+
 def redelete():
     try:
         l = listdir("Output")
@@ -375,5 +379,4 @@ def redelete():
                 if isfile(path):
                     remove(path)
     except Exception as e:
-        ErrorHandler(e,"Redelete")
-
+        ErrorHandler(e, "Redelete")
