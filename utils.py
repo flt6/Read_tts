@@ -1,14 +1,12 @@
-from time import sleep
 from requests import get
 from requests.utils import quote  # type: ignore
-from log import getLogger
-from os.path import isfile, isdir
-from os import mkdir,remove
-from re import match, sub
+from subprocess import run, PIPE
+from log import getLogger, Log
 from alive_progress import alive_bar
-# TODO: multiprocessing
-from multiprocessing import Process
-from subprocess import PIPE, run
+from os.path import isfile, isdir
+from html import escape
+from os import mkdir, remove, listdir
+from re import sub, match, search
 
 from model import Book, ChapterList, Chapter
 from tts import tts
@@ -19,17 +17,17 @@ from requests.exceptions import RequestException
 
 
 import consts
-from typing import Any,TypeVar
 from azure.cognitiveservices.speech.speech import ResultFuture
 from azure.cognitiveservices.speech import SpeechSynthesisResult
 
 
-def req(param:tuple[str,list[Any]], caller="Requester", logger=None,
+
+def req(param, caller="Requester", logger=None,
         level=1, exit=False, wait=False):
     try:
-        url,args = param
-        url = url.format(args[0],*[quote(str(i)) for i in args[1:]])
-        getLogger("request").debug("url=%s,caller=%s"%(url,caller))
+        url, args = param
+        url = url.format(args[0], *[quote(str(i)) for i in args[1:]])
+        getLogger("request").debug("url=%s,caller=%s" % (url, caller))
         res = get(url)
         if res.status_code != 200:
             raise ServerError(res.status_code)  # type: ignore
@@ -46,26 +44,12 @@ def req(param:tuple[str,list[Any]], caller="Requester", logger=None,
         return None
     return json
 
-
-class Stack:
-    def __init__(self):
-        self._st = []
-
-    def push(self, x):
-        self._st.append(x)
-
-    def top(self):
-        return self._st[-1]
-
-    def pop(self):
-        return self._st.pop()
-
-    def length(self):
-        return len(self._st)
-
-    def empty(self):
-        return self.length() == 0
-
+def chk(num:int):
+    o=0
+    while num:
+        o|=num&1
+        num>>=1
+    return o
 
 class ToApp:
     def __init__(self):
@@ -79,7 +63,8 @@ class ToApp:
             @return: Is succeeded.
         '''
         url = consts.GET_SHELF
-        shelf: dict = req((url,[self.ip]), 'ToApp', level=2, exit=True, wait=True)  # type: ignore
+        shelf: dict = req((url, [self.ip]), 'ToApp',
+                          level=2, exit=True, wait=True)  # type: ignore
         books = []
         for i in range(len(shelf)):
             book = Book(**shelf[i])
@@ -101,20 +86,28 @@ class ToApp:
 
     def choose_book(self, books: list[Book]):
         num = int(input("No. "))-1
+        book = books[num]
+        return book
+
+    def choose_area(self,book:Book):
         bgn = input(
             "From(%d: %s): " % (
-                books[num].idx,
-                books[num].title
+                book.idx,
+                book.title
             )
         )
-        bgn = books[num].idx if bgn == '' else int(bgn)
+        bgn = book.idx if bgn == '' else int(bgn)
         to = int(input("To. "))
-        book = books[num]
-        return (bgn, to, book)
+        return range(bgn, to)
+    
+    def choose_single(self,book):
+        chaps=input("chapters(eg: '1 2 3'): ").split(" ")
+        return list({int(i) for i in chaps})
 
     def get_charpter_list(self, book: Book):
         url = consts.GET_CHAPTER_LIST
-        chapters = req((url,[self.ip, book.url]), "ToApp", level=2, exit=True, wait=True)
+        chapters = req((url, [self.ip, book.url]),
+                       "ToApp", level=2, exit=True, wait=True)
         if chapters is None:
             return
         return [ChapterList(**item, book=book.url) for item in chapters]
@@ -125,7 +118,7 @@ class ToApp:
         with alive_bar(len(chapters)) as bar:
             for ch in chapters:
                 url = consts.GET_CONTENT
-                res = req((url,[self.ip, ch.url, ch.idx]), "ToApp")
+                res = req((url, [self.ip, ch.url, ch.idx]), "ToApp")
                 bar()
                 if res is None:
                     retry.append(ch)
@@ -138,7 +131,7 @@ class ToApp:
             self.logger.debug("Regular Expression match failed.")
             return False
         try:
-            res = get(consts.GET_SHELF.format(ip))
+            res = get(consts.GET_SHELF.format(ip),timeout=3)
             self.logger.debug("HTTP connect status_code=%d" % res.status_code)
             if res.status_code != 200:
                 raise ServerError(res.status_code)  # type: ignore
@@ -192,34 +185,36 @@ class Trans:
         self.type = type
 
     def content_basic(self, chap: Chapter):
-        con=chap.content
-        lines=con.splitlines()
-        totLines=len(lines)
-        content=[]
-        i=0
-        while i<totLines:
-            tem=""
+        con = chap.content
+        lines = con.splitlines()
+        totLines = len(lines)
+        content = []
+        i = 0
+        while i < totLines:
+            tem = ""
             getLogger("DEBUG").debug(f"i={i} totLines={totLines}")
-            while len(tem)<consts.MAX_CHAR and i<totLines:
-                tem+=lines[i]
-                tem+="\n"
-                i+=1
+            while len(tem) < consts.MAX_CHAR and i < totLines:
+                tem += lines[i]
+                tem += "\n"
+                i += 1
+            tem = escape(tem)
             content.append(consts.SSML_MODEL.format(tem))
         return content
 
     def title(self, chap: Chapter):
-        title = sub(r'''[\*\/\\\|\<\>\? \:\.\'\"\!]''', "", chap.title)
-        title = str(chap.idx)+"_"+chap.title
+        title = sub(r'''[\*\/\\\|\<\>\? \:\.\'\"\!\s]''', "", chap.title)
+        title = "%03d"%chap.idx+"_"+title
         return title
 
     def __call__(self, chap: Chapter):
         if self.type == 1:
-            opt:list[Chapter] = []
-            title=self.title(chap)
-            content=self.content_basic(chap)
-            for i,t in enumerate(content):
-                opt.append(Chapter(chap.idx,title+f" ({i}).mp3",t,i))
+            opt: list[Chapter] = []
+            title = self.title(chap)
+            content = self.content_basic(chap)
+            for i, t in enumerate(content):
+                opt.append(Chapter(chap.idx, title+f" ({i}).mp3", t))
             return opt
+
 
 class ToServer:
     def __init__(self, optDir):
@@ -232,9 +227,38 @@ class ToServer:
         if not isdir(self.optDir):
             mkdir(self.optDir)
 
+    def _download(self, st, retry:set[Chapter], chapters, bar):
+        for task, j in st:
+            try:
+                ret = task.get()
+                ret: SpeechSynthesisResult
+                self.logger.debug(
+                    "audio_duration="+str(ret.audio_duration))
+                if ret.audio_duration.total_seconds() == 0:
+                    self.logger.error("audio_duration=0")
+                    retry.add(chapters[j])
+                    raise RuntimeError("Audio duration is zero.")
+                if ret.reason != consts.TTS_SUC:
+                    self.logger.debug("AsyncReq not success `get`")
+                    self.logger.error(ret.reason)
+                    self.logger.error(ret.cancellation_details)
+                    self.logger.debug(chapters[j].idx)
+                    self.logger.debug(
+                        "SSML Text: " + chapters[j].content)
+                    retry.add(chapters[j])
+                    e = RuntimeError("ret.reason=%s" % ret.reason)
+                    self.logger.debug("Call ErrorHandler")
+                    ErrorHandler(e, "AsyncReq", self.logger)()
+            except BaseException as e:
+                self.logger.debug("AsyncReq raise at `try`")
+                ErrorHandler(e, "AsyncReq", self.logger)()
+                retry.add(chapters[j])
+            getLogger('bar').debug("bar")
+            bar()
+
     def asyncDownload(self, chapters: list[Chapter]):
         st: list[tuple[ResultFuture, int]] = []
-        retry: list[Chapter] = []
+        retry: set[Chapter] = set()
         with alive_bar(len(chapters)) as bar:
             for i, chap in enumerate(chapters):
                 opt = self.optDir+'/'+chap.title
@@ -243,48 +267,21 @@ class ToServer:
                 st.append((task, i))  # type: ignore
                 if len(st) >= consts.MAX_TASK:
                     self.logger.info("Start async waiting.")
-                    for task, j in st:
-                        try:
-                            ret = task.get()
-                            ret:SpeechSynthesisResult
-                            self.logger.debug("audio_duration="+str(ret.audio_duration))
-                            if ret.audio_duration.total_seconds() == 0:
-                                raise RuntimeError("Audio duration is zero.")
-                            if ret.reason != consts.TTS_SUC:
-                                self.logger.error(ret.reason)
-                                self.logger.error(ret.cancellation_details)
-                                self.logger.debug(chapters[j].idx)
-                                self.logger.debug("SSML Text: " + chapters[j].content)
-                                retry.append(chapters[j])
-                        except RuntimeError as e:
-                            ErrorHandler(e,"RE",self.logger)
-                        except BaseException as e:
-                            ErrorHandler(e, "AsyncReq", self.logger)
-                            retry.append(chapters[j])
-                        bar()
+                    self._download(st, retry, chapters, bar)
                     st = []
                     self.logger.info("End async waiting.")
+            # ----------------------------------------------
             self.logger.info("Start last async waiting.")
-            if len(st) >= consts.MAX_TASK:
-                self.logger.info("Start async waiting.")
-                for task, j in st:
-                    try:
-                        ret = task.get()
-                        if ret.reason != consts.TTS_SUC:
-                            self.logger.error(ret.reason)
-                            retry.append(chapters[j])
-                    except Exception as e:
-                        ErrorHandler(e, "AsyncReq", self.logger)
-                        retry.append(chapters[j])
-                    bar()
-                self.logger.info("End async waiting.")
+            self._download(st, retry, chapters, bar)
+            self.logger.info("End async waiting.")
+            # ----------------------------------------------
         return retry
 
-def _merge(logger,ch,name,is_remove):
-    optDir=consts.OPT_DIR
+
+def _merge(dir: str, logger: Log, ch: list[Chapter], name: str, is_remove: bool):
     logger.debug(f"Start merging '{name}'")
-    paths=[optDir+"/"+i.title for i in ch]
-    cmd=[
+    paths = [dir+"/"+i.title for i in ch]
+    cmd = [
         'ffmpeg',
         '-hide_banner',
         '-i',
@@ -292,13 +289,14 @@ def _merge(logger,ch,name,is_remove):
         '-c',
         'copy',
         '-y',
-        optDir+"/"+name.replace(" (0).mp3",".mp3")
+        dir+"/"+name.replace(" (0).mp3", ".mp3")
     ]
     try:
-        ret=run(cmd,stderr=PIPE)
+        ret = run(cmd, stderr=PIPE)
         if ret.returncode != 0:
             logger.error(ret.stderr.decode("utf-8"))
-            logger.error("Error occurred while merging. code=%d"%ret.returncode)
+            logger.error("Error occurred while merging. code=%d" %
+                         ret.returncode)
         else:
             logger.debug(ret.stderr.decode("utf-8"))
             if is_remove:
@@ -306,33 +304,76 @@ def _merge(logger,ch,name,is_remove):
                     try:
                         remove(path)
                     except Exception as e:
-                        ErrorHandler(e,"Remove",logger)()
+                        ErrorHandler(e, "Remove", logger)()
     except Exception as e:
-        ErrorHandler(e, "merge",logger)()
+        ErrorHandler(e, "merge", logger)()
 
-def merge(chapters:list[Chapter],is_remove=True):
+def _concat(tmp:list[str],name:str):
+    paths = ["Output/"+i for i in tmp]
+    cmd = [
+        'ffmpeg',
+        '-hide_banner',
+        '-i',
+        f'concat:{"|".join(paths)}',
+        '-c',
+        'copy',
+        '-y',
+        "Output/"+name
+    ]
+    if paths != []:
+        print(cmd)
+        run(cmd)
+        for f in paths:
+            remove(f)
+
+def reConcat():
+    l = listdir("Output")
+    name = ""
+    tmp:list[str] = []
+    for file in l:
+        if " (0).mp3" in file:
+            _concat(tmp,name)
+            tmp = []
+            name = file.replace(" (0).mp3", ".mp3")
+        tmp.append(file)
+    _concat(tmp,name)
+
+def merge(chapters: list[Chapter], dir: str, is_remove=True):
     logger = getLogger("Merge")
-    ch=[]
-    idx=-1
-    name=""
+    ch = []
+    idx = -1
+    name = ""
     for chap in chapters:
         if chap.idx == idx:
             ch.append(chap)
         else:
-            if ch==[]:
-                idx=chap.idx
-                name=chap.title
-                ch=[chap]
+            if ch == []:
+                idx = chap.idx
+                name = chap.title
+                ch = [chap]
                 continue
-            _merge(logger,ch,name,is_remove)
-            idx=chap.idx
-            name=chap.title
-            ch=[chap]
-    _merge(logger,ch,name,is_remove)
+            _merge(dir, logger, ch, name, is_remove)
+            idx = chap.idx
+            name = chap.title
+            ch = [chap]
+    _merge(dir, logger, ch, name, is_remove)
 
-def time_fmt(time:float):
+
+def time_fmt(time: float):
     time = int(time)
-    hour=time//3600
-    min=time//60
-    sec=time%60
-    return "%02d:%02d:%02d"%(hour,min,sec)
+    hour = time//3600
+    min = time//60
+    sec = time % 60
+    return "%02d:%02d:%02d" % (hour, min, sec)
+
+def redelete():
+    try:
+        l = listdir("Output")
+        for i in l:
+            if search(r"\s\(\d+\)\.mp3$", i) is not None:
+                path = "Output/"+i
+                if isfile(path):
+                    remove(path)
+    except Exception as e:
+        ErrorHandler(e,"Redelete")
+

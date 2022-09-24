@@ -1,5 +1,4 @@
-# from requests import get
-from typing import Optional, List, Union
+from typing import Optional
 
 class Book:
     author: str

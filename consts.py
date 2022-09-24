@@ -16,6 +16,13 @@ GET_SHELF="http://{}/getBookshelf"
 GET_CHAPTER_LIST="http://{}/getChapterList?url={}"
 GET_CONTENT="http://{}/getBookContent?url={}&index={}"
 
+MODE_CHOOSE = '''\
+Choose running mode:
+1. Basic
+2. Fix
+3. Concat
+'''
+
 CHOOSEBOOK='''
 No.     %02d
 name:   %s
