@@ -10,7 +10,8 @@ MAX_CHAR   : int
 OPT_DIR    : str
 DEBUG      : bool
 TO_CONSOLE : bool
-
+WAIT_TIME  : int
+RETRY_SUB  : int
 
 def load():
     config = DEFAULT_CONFIG.copy()

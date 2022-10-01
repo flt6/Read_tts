@@ -8,8 +8,8 @@ from re import sub, match, search
 from html import escape
 
 from model import Book, ChapterList, Chapter
-from log  import getLogger, Log
-from tts  import tts
+from log import getLogger, Log
+from tts import tts
 
 from requests.exceptions import RequestException
 from exceptions import ErrorHandler
@@ -20,6 +20,7 @@ from azure.cognitiveservices.speech import SpeechSynthesisResult
 
 import consts
 import config
+
 
 def req(param, caller="Requester", logger=None,
         level=1, exit=False, wait=False):
@@ -102,7 +103,7 @@ class ToApp:
         return range(bgn, to)
 
     def choose_single(self):
-        chaps = input("chapters(eg: '1 2 3'): ").split(" ")
+        chaps = input("chapters(eg: '1 2 3'): ").strip().split(" ")
         return list({int(i) for i in chaps})
 
     def get_charpter_list(self, book: Book):
@@ -256,7 +257,7 @@ class ToServer:
                 retry.add(chapters[j])
             bar()
 
-    def asyncDownload(self, chapters: list[Chapter]):
+    def asyncDownload(self, chapters: list[Chapter], max_task: int = config.MAX_TASK):
         st: list[tuple[ResultFuture, int]] = []
         retry: set[Chapter] = set()
         with alive_bar(len(chapters)) as bar:
@@ -265,7 +266,7 @@ class ToServer:
                 task = tts(chap.content, opt)
                 self.logger.debug(f"Create task {task}")
                 st.append((task, i))  # type: ignore
-                if len(st) >= config.MAX_TASK:
+                if len(st) >= max_task:
                     self.logger.info("Start async waiting.")
                     self._download(st, retry, chapters, bar)
                     st = []

@@ -33,6 +33,8 @@ DEFAULT_CONFIG={
     'MAX_RETRY' : 5,
     'MAX_TASK'  : 10,
     'MAX_CHAR'  : 1500,
+    "WAIT_TIME" : 5,
+    "RETRY_SUB" : 4,
     'OPT_DIR'   : "Output",
     'DEBUG'     : None,
     'TO_CONSOLE': True
@@ -42,6 +44,8 @@ DEFAULT_TYPE={
     'MAX_RETRY' : (int,),
     'MAX_TASK'  : (int,),
     'MAX_CHAR'  : (int,),
+    "WAIT_TIME" : (int,),
+    "RETRY_SUB" : (int,),
     'OPT_DIR'   : (str,),
     'DEBUG'     : (type(None),bool),
     'TO_CONSOLE': (bool,)

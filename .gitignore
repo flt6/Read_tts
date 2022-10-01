@@ -3,6 +3,7 @@ Output*
 __pycache__
 logs
 DEBUG
+config.json
 *.conf
 .vscode
 *.dmp

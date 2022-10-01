@@ -1,5 +1,5 @@
 from consts import MODE_CHOOSE
-from config import MAX_RETRY, OPT_DIR
+from config import MAX_RETRY, OPT_DIR, WAIT_TIME,RETRY_SUB, MAX_TASK
 from utils import ToApp, Trans, ToServer
 from utils import merge, time_fmt, reConcat, redelete
 from model import Book, Chapter
@@ -8,7 +8,7 @@ from log import getLogger
 from exceptions import ErrorHandler
 from traceback import format_exc
 from shutil import copy
-from time import time
+from time import sleep, time
 from sys import exit
 
 
@@ -84,11 +84,17 @@ class Main:
 
     def tts(self, chaps: list[Chapter]):
         logger.info("tts request started.")
-        retry = self.ser.asyncDownload(chaps)
+        retry = self.ser.asyncDownload(chaps)  # type: ignore
         cnt = 0
+        max_task = MAX_TASK
         while len(retry):
+            logger.info("Start retry waiting.")
+            sleep(WAIT_TIME)
+            max_task//=RETRY_SUB
+            if max_task < 1: 
+                max_task = 1
             logger.info("Start (New turn) retry.")
-            retry = self.ser.asyncDownload(list(retry))
+            retry = self.ser.asyncDownload(list(retry),max_task)
             cnt += 1
             if cnt > MAX_RETRY and len(retry) > 0:
                 logger.error("Too many retries for Getting shelf")
@@ -109,15 +115,16 @@ class Main:
         chaps = self.dealApp(book, area)
         chaps = self.textTrans(chaps)
         retry = self.tts(chaps)
+        self.merge(chaps)
         if retry is not None:
-            print("Retry (for fix mode): " +
+            retry = set(retry)
+            logger.info("Retry (for fix mode): " +
                   " ".join([str(i.idx) for i in retry]))
             k = len(retry)/len(chaps)
             if k > 0.7:
                 logger.info("There are too many instances needed to retry for 5 times")
                 logger.info("Retry/Total: %.2f%%"%k*100)
                 logger.info("You may need to decrease the muliple requests number (`MAX_TASK` in config.json)")
-        self.merge(chaps)
         redelete()
         return len(chaps)
 
