@@ -1,8 +1,4 @@
 from azure.cognitiveservices.speech import ResultReason  # type: ignore
-from os import path
-
-DEBUG = True
-TO_CONSOLE = True
 
 SSML_MODEL = '''<speak xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="http://www.w3.org/2001/mstts" xmlns:emo="http://www.w3.org/2009/10/emotionml" version="1.0" xml:lang="en-US">
     <voice name="zh-CN-YunyeNeural">
@@ -21,6 +17,7 @@ Choose running mode:
 1. Basic
 2. Fix
 3. Concat
+4. Delete temporary files
 '''
 
 CHOOSEBOOK = '''
@@ -31,13 +28,23 @@ now:    %s
 -----------------
 '''
 
-MAX_RETRY = 5
-MAX_TASK = 10
-MAX_CHAR = 1500
 
-OPT_DIR = "Output"
+DEFAULT_CONFIG={
+    'MAX_RETRY' : 5,
+    'MAX_TASK'  : 10,
+    'MAX_CHAR'  : 1500,
+    'OPT_DIR'   : "Output",
+    'DEBUG'     : None,
+    'TO_CONSOLE': True
+}
+
+DEFAULT_TYPE={
+    'MAX_RETRY' : (int,),
+    'MAX_TASK'  : (int,),
+    'MAX_CHAR'  : (int,),
+    'OPT_DIR'   : (str,),
+    'DEBUG'     : (type(None),bool),
+    'TO_CONSOLE': (bool,)
+}
 
 TTS_SUC = ResultReason.SynthesizingAudioCompleted
-
-if DEBUG is None:
-    DEBUG = path.exists("DEBUG")

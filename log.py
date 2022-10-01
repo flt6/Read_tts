@@ -2,8 +2,7 @@ from logging import Logger, Formatter, FileHandler
 from logging import DEBUG, INFO, WARNING, ERROR, CRITICAL
 from traceback import format_exc
 from os import path, mkdir
-import consts
-
+import config
 
 class Log(Logger):
     def __init__(self, name, show=True, debug=False) -> None:
@@ -103,6 +102,6 @@ class Log(Logger):
 def getLogger(name: str = "Default") -> Log:
     return Log(
         name=name,
-        show=consts.TO_CONSOLE,
-        debug=consts.DEBUG,
+        show=config.TO_CONSOLE,
+        debug=config.DEBUG,
     ).get_logger()

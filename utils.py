@@ -19,6 +19,7 @@ from azure.cognitiveservices.speech.speech import ResultFuture
 from azure.cognitiveservices.speech import SpeechSynthesisResult
 
 import consts
+import config
 
 def req(param, caller="Requester", logger=None,
         level=1, exit=False, wait=False):
@@ -193,7 +194,7 @@ class Trans:
         while i < totLines:
             tem = ""
             getLogger("DEBUG").debug(f"i={i} totLines={totLines}")
-            while len(tem) < consts.MAX_CHAR and i < totLines:
+            while len(tem) < config.MAX_CHAR and i < totLines:
                 tem += lines[i]
                 tem += "\n"
                 i += 1
@@ -253,7 +254,6 @@ class ToServer:
                 self.logger.debug("AsyncReq raise at `try`")
                 ErrorHandler(e, "AsyncReq", self.logger)()
                 retry.add(chapters[j])
-            getLogger('bar').debug("bar")
             bar()
 
     def asyncDownload(self, chapters: list[Chapter]):
@@ -265,7 +265,7 @@ class ToServer:
                 task = tts(chap.content, opt)
                 self.logger.debug(f"Create task {task}")
                 st.append((task, i))  # type: ignore
-                if len(st) >= consts.MAX_TASK:
+                if len(st) >= config.MAX_TASK:
                     self.logger.info("Start async waiting.")
                     self._download(st, retry, chapters, bar)
                     st = []

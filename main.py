@@ -1,4 +1,5 @@
-from consts import MAX_RETRY, OPT_DIR, MODE_CHOOSE
+from consts import MODE_CHOOSE
+from config import MAX_RETRY, OPT_DIR
 from utils import ToApp, Trans, ToServer
 from utils import merge, time_fmt, reConcat, redelete
 from model import Book, Chapter
@@ -8,6 +9,7 @@ from exceptions import ErrorHandler
 from traceback import format_exc
 from shutil import copy
 from time import time
+from sys import exit
 
 
 logger = getLogger("Main")
@@ -29,6 +31,12 @@ class Main:
             if not typ.isdigit():
                 print("Invalid mode.")
         typ = int(typ)
+        if typ == 3:
+            reConcat()
+            exit()
+        elif typ == 4:
+            redelete()
+            exit()
         logger.debug("Getting shelf")
         shelf = self.app.get_shelf()
         book = self.app.choose_book(shelf)
@@ -36,9 +44,6 @@ class Main:
             area = self.app.choose_area(book)
         elif typ == 2:
             area = self.app.choose_single()
-        elif typ == 3:
-            reConcat()
-            exit()
         else:
             e = ValueError("Invalid `typ` %d" % typ)
             ErrorHandler(e, "Main", logger, exit=True, wait=True)()
@@ -107,6 +112,11 @@ class Main:
         if retry is not None:
             print("Retry (for fix mode): " +
                   " ".join([str(i.idx) for i in retry]))
+            k = len(retry)/len(chaps)
+            if k > 0.7:
+                logger.info("There are too many instances needed to retry for 5 times")
+                logger.info("Retry/Total: %.2f%%"%k*100)
+                logger.info("You may need to decrease the muliple requests number (`MAX_TASK` in config.json)")
         self.merge(chaps)
         redelete()
         return len(chaps)

@@ -3,7 +3,7 @@ from json.decoder import JSONDecodeError
 from traceback import extract_stack
 from typing import Any
 from log import getLogger
-import consts
+import config
 
 class ServerError(Exception):
     def __init__(self, message: Any = None):
@@ -56,7 +56,7 @@ class ErrorHandler:
         self.lgexp = lg.exception
         self.lgdbg = lg.debug
 
-        self.dbg = consts.DEBUG
+        self.dbg = config.DEBUG
         self.level = level
         self.err = err
         self.src = src
@@ -102,6 +102,10 @@ class ErrorHandler:
         elif isinstance(err, JSONDecodeError):
             msg = f"error occurred while decoding JSON at {self.src}:\n"
             msg += f"( {err.doc} ) {err.msg} at {err.pos}"
+        elif isinstance(err, SystemError):
+            msg = "SystemError Occurred"
+            self.level = 3
+            self.dbg = True
         elif isinstance(err, KeyboardInterrupt):
             msg = "KeyboardInterrupt!"
             self.exit = True
