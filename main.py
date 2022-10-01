@@ -1,5 +1,6 @@
 from consts import MODE_CHOOSE
 from config import MAX_RETRY, OPT_DIR, WAIT_TIME,RETRY_SUB, MAX_TASK
+from config import check
 from utils import ToApp, Trans, ToServer
 from utils import merge, time_fmt, reConcat, redelete
 from model import Book, Chapter
@@ -131,6 +132,7 @@ class Main:
 
 def main(typ: int):
     try:
+        check()
         bgn = time()
         main = Main(typ, OPT_DIR)
         length = main()

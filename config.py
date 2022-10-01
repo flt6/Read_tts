@@ -27,7 +27,9 @@ def load():
 def check():
     typ: dict[str, tuple] = DEFAULT_TYPE
     if not exists("config.json"):
-        print("config.json is not found.")
+        print("config.json is not found. Auto created.")
+        with open("config.json", "w", encoding="utf-8") as f:
+            json.dump(DEFAULT_CONFIG,f)
     with open("config.json", "r", encoding="utf-8") as f:
         d: dict[str, Any] = json.load(f)
     suc = True
