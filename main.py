@@ -146,6 +146,8 @@ def main(typ: int):
 
     except SystemExit:
         input("Press enter to exit.")
+    except KeyboardInterrupt:
+        input("Press enter to exit.")
     except BaseException as e:
         logger.critical("Uncaught exception")
         logger.critical(format_exc())
