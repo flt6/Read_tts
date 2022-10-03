@@ -33,6 +33,11 @@ jobs:
       with:
         path: main.exe
         if-no-files-found: error
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: main.exe
     - name: upload to lanzou
       run: |
         python3 .github/script/lzy.py
