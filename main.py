@@ -144,10 +144,12 @@ def main(typ: int):
         logger.info("Totally used "+t)
         logger.info("Avarage time for each: %ds" % ((end-bgn)/length))
 
-    except SystemExit:
-        input("Press enter to exit.")
+    except SystemExit as e:
+        logger.info(f"SystemExit with code {e.code} got, may exit not normally.")
+        return
     except KeyboardInterrupt:
-        input("Press enter to exit.")
+        logger.info("Got keyboard interrupt, exit forcely.")
+        return
     except BaseException as e:
         logger.critical("Uncaught exception")
         logger.critical(format_exc())
@@ -156,3 +158,4 @@ def main(typ: int):
 
 if __name__ == '__main__':
     main(1)
+    input("Press enter to exit.")
