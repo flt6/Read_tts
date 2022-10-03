@@ -158,9 +158,12 @@ class ToApp:
             self.logger.debug("_testIP() returned False")
         while True:
             ip = input("ip: ")
-            self.logger.debug("Set ip=%s" % ip)
+            if ip == "":
+                if self._testIP(ip):
+                    return
             if ":" not in ip:
                 ip += ":1122"
+            self.logger.debug("Set ip=%s" % ip)
             if self._testIP(ip):
                 self.ip = ip
                 return
@@ -229,7 +232,7 @@ class ToServer:
             mkdir(self.optDir)
 
     def _download(self, st, retry: set[Chapter], chapters, bar):
-        self.logger.info("%02d tasks need to wait")
+        self.logger.info("%02d tasks need to wait"%len(st))
         for task, j in st:
             try:
                 ret = task.get()

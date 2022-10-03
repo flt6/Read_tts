@@ -34,7 +34,7 @@ DEFAULT_CONFIG={
     'MAX_TASK'  : 10,
     'MAX_CHAR'  : 1500,
     "WAIT_TIME" : 5,
-    "RETRY_SUB" : 4,
+    "RETRY_SUB" : 2,
     'OPT_DIR'   : "Output",
     'DEBUG'     : None,
     'TO_CONSOLE': True
