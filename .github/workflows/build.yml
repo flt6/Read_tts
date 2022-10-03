@@ -27,7 +27,7 @@ jobs:
         pip install -r requirements.txt
     - name: build
       run: |
-        nuitka --follow-imports --noinclude-IPython-mode=nofollow --standalone --include-data-file="grapheme_break_property.json"=grapheme\data\  --include-data-file=fail.mp3=fail.mp3 --onefile main.py
+        nuitka --follow-imports --noinclude-IPython-mode=nofollow --standalone --include-data-file="grapheme_break_property.json"=grapheme\data\  --include-data-file=fail.mp3=fail.mp3 --assume-yes-for-downloads --onefile main.py
     - name: upload
       uses: actions/upload-artifact@v3.0.0
       with:
@@ -36,4 +36,4 @@ jobs:
     - name: upload to lanzou
       run: |
         python3 .github/script/lzy.py
-    
+
