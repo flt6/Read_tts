@@ -13,7 +13,7 @@ from tts import tts
 
 from requests.exceptions import RequestException
 from exceptions import ErrorHandler
-from exceptions import ServerError, AppError
+from exceptions import ServerError, AppError, ZeroLengthError
 
 from azure.cognitiveservices.speech.speech import ResultFuture
 from azure.cognitiveservices.speech import SpeechSynthesisResult
@@ -194,7 +194,6 @@ class Trans:
         i = 0
         while i < totLines:
             tem = ""
-            getLogger("DEBUG").debug(f"i={i} totLines={totLines}")
             while len(tem) < config.MAX_CHAR and i < totLines:
                 tem += lines[i]
                 tem += "\n"
@@ -230,6 +229,7 @@ class ToServer:
             mkdir(self.optDir)
 
     def _download(self, st, retry: set[Chapter], chapters, bar):
+        self.logger.info("%02d tasks need to wait")
         for task, j in st:
             try:
                 ret = task.get()
@@ -239,7 +239,7 @@ class ToServer:
                 if ret.audio_duration.total_seconds() == 0:
                     self.logger.error("audio_duration=0")
                     retry.add(chapters[j])
-                    raise RuntimeError("Audio duration is zero.")
+                    raise ZeroLengthError("Audio duration is zero.")
                 if ret.reason != consts.TTS_SUC:
                     self.logger.debug("AsyncReq not success `get`")
                     self.logger.error(ret.reason)
@@ -249,10 +249,8 @@ class ToServer:
                         "SSML Text: " + chapters[j].content)
                     retry.add(chapters[j])
                     e = RuntimeError("ret.reason=%s" % ret.reason)
-                    self.logger.debug("Call ErrorHandler")
                     ErrorHandler(e, "AsyncReq", self.logger)()
             except BaseException as e:
-                self.logger.debug("AsyncReq raise at `try`")
                 ErrorHandler(e, "AsyncReq", self.logger)()
                 retry.add(chapters[j])
             bar()
