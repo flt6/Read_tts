@@ -38,6 +38,7 @@ class Main:
         elif typ == 4:
             redelete()
             exit()
+        self.app.init()
         logger.debug("Getting shelf")
         shelf = self.app.get_shelf()
         book = self.app.choose_book(shelf)

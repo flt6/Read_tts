@@ -1,5 +1,7 @@
+from time import sleep
 from alive_progress import alive_bar
 from subprocess import run, PIPE
+from threading import Thread
 from requests.utils import quote  # type: ignore
 from requests import get
 from os.path import isfile, isdir
@@ -56,6 +58,8 @@ def chk(num: int):
 class ToApp:
     def __init__(self):
         self.logger = getLogger("ToApp")
+
+    def init(self):
         self.getIP()
         self.saveIP()
 
@@ -145,6 +149,7 @@ class ToApp:
             ErrorHandler(e, "testIP", self.logger, 2)()
 
     def getIP(self):
+        ip = ""
         if isfile("ip.conf"):
             try:
                 with open("ip.conf", "r") as f:
@@ -157,10 +162,8 @@ class ToApp:
                 ErrorHandler(e, "ToApp", self.logger)()
             self.logger.debug("_testIP() returned False")
         while True:
-            ip = input("ip: ")
-            if ip == "":
-                if self._testIP(ip):
-                    return
+            _ip = input("ip: ")
+            ip = _ip if _ip != "" else ip
             if ":" not in ip:
                 ip += ":1122"
             self.logger.debug("Set ip=%s" % ip)
@@ -231,50 +234,71 @@ class ToServer:
         if not isdir(self.optDir):
             mkdir(self.optDir)
 
-    def _download(self, st, retry: set[Chapter], chapters, bar):
-        self.logger.info("%02d tasks need to wait"%len(st))
-        for task, j in st:
-            try:
-                ret = task.get()
-                ret: SpeechSynthesisResult
-                self.logger.debug(
-                    "audio_duration="+str(ret.audio_duration))
-                if ret.audio_duration.total_seconds() == 0:
-                    self.logger.error("audio_duration=0")
-                    retry.add(chapters[j])
-                    raise ZeroLengthError("Audio duration is zero.")
-                if ret.reason != consts.TTS_SUC:
-                    self.logger.debug("AsyncReq not success `get`")
-                    self.logger.error(ret.reason)
-                    self.logger.error(ret.cancellation_details)
-                    self.logger.debug(chapters[j].idx)
-                    self.logger.debug(
-                        "SSML Text: " + chapters[j].content)
-                    retry.add(chapters[j])
-                    e = RuntimeError("ret.reason=%s" % ret.reason)
-                    ErrorHandler(e, "AsyncReq", self.logger)()
-            except BaseException as e:
-                ErrorHandler(e, "AsyncReq", self.logger)()
+    def _callback(self, task: ResultFuture, j, retry, chapters, bar):
+        ret = task.get()
+        getLogger("_callback").debug(ret)
+        self._deal(ret, j, retry, chapters, bar)
+
+    def callback(self, task, j, retry: set[Chapter], chapters, bar):
+        thr = Thread(target=self._callback, args=(
+            task, j, retry, chapters, bar))
+        getLogger("callback").debug(thr)
+        thr.start()
+        return thr
+
+    def _deal(self, ret: SpeechSynthesisResult, j, retry: set[Chapter], chapters, bar):
+        try:
+            self.logger.debug(
+                "audio_duration="+str(ret.audio_duration))
+            if ret.audio_duration.total_seconds() == 0:
+                self.logger.error("audio_duration=0")
                 retry.add(chapters[j])
-            bar()
+                raise ZeroLengthError("Audio duration is zero.")
+            if ret.reason != consts.TTS_SUC:
+                self.logger.debug("AsyncReq not success `get`")
+                self.logger.error(ret.reason)
+                self.logger.error(ret.cancellation_details)
+                self.logger.debug(chapters[j].idx)
+                self.logger.debug(
+                    "SSML Text: " + chapters[j].content)
+                retry.add(chapters[j])
+                e = RuntimeError("ret.reason=%s" % ret.reason)
+                ErrorHandler(e, "AsyncReq", self.logger)()
+        except BaseException as e:
+            ErrorHandler(e, "AsyncReq", self.logger)()
+            retry.add(chapters[j])
+        retry_len = len(retry)
+        total = 1 if bar.current() == 0 else bar.current()+1
+        persent = 1-(retry_len/total)
+        bar.text = "|Retry %02d|Success persent: %0.2f%%" % (
+            retry_len, persent*100)
+        bar()
 
     def asyncDownload(self, chapters: list[Chapter], max_task: int = config.MAX_TASK):
-        st: list[tuple[ResultFuture, int]] = []
+        pool: list[Thread] = []
         retry: set[Chapter] = set()
         with alive_bar(len(chapters)) as bar:
+            bar.title = "%02d task for one time" % max_task
             for i, chap in enumerate(chapters):
                 opt = self.optDir+'/'+chap.title
                 task = tts(chap.content, opt)
                 self.logger.debug(f"Create task {task}")
-                st.append((task, i))  # type: ignore
-                if len(st) >= max_task:
+                self.logger.debug(task)
+                pool.append(self.callback(task, i, retry, chapters, bar))
+                while len(pool) >= max_task:
                     self.logger.info("Start async waiting.")
-                    self._download(st, retry, chapters, bar)
-                    st = []
+                    sleep(2)
+                    tmp = []
+                    for thr in pool:
+                        if thr.is_alive():
+                            tmp.append(thr)
+                    pool = tmp.copy()
+                    # This should be like `ptr.png`
                     self.logger.info("End async waiting.")
             # ----------------------------------------------
             self.logger.info("Start last async waiting.")
-            self._download(st, retry, chapters, bar)
+            for thr in pool:
+                thr.join()
             self.logger.info("End async waiting.")
             # ----------------------------------------------
         return retry
