@@ -1,6 +1,6 @@
 import json
 from os.path import exists
-from typing import Any
+from typing import Any,Union
 from consts import DEFAULT_CONFIG, DEFAULT_TYPE
 
 
@@ -10,8 +10,8 @@ MAX_CHAR   : int
 OPT_DIR    : str
 DEBUG      : bool
 TO_CONSOLE : bool
-WAIT_TIME  : int
-RETRY_SUB  : int
+WAIT_TIME  : Union[float,int]
+RETRY_SUB  : Union[float,int]
 
 def load():
     config = DEFAULT_CONFIG.copy()

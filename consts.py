@@ -44,8 +44,8 @@ DEFAULT_TYPE={
     'MAX_RETRY' : (int,),
     'MAX_TASK'  : (int,),
     'MAX_CHAR'  : (int,),
-    "WAIT_TIME" : (int,),
-    "RETRY_SUB" : (int,),
+    "WAIT_TIME" : (int,float),
+    "RETRY_SUB" : (int,float),
     'OPT_DIR'   : (str,),
     'DEBUG'     : (type(None),bool),
     'TO_CONSOLE': (bool,)
