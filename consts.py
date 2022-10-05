@@ -35,6 +35,9 @@ DEFAULT_CONFIG={
     'MAX_CHAR'  : 1500,
     "WAIT_TIME" : 5,
     "RETRY_SUB" : 2,
+    "LIMIT_429" : 0.7,
+    "MAX_WAIT"  : 20,
+    "FAIL_429"  : 3,
     'OPT_DIR'   : "Output",
     'DEBUG'     : None,
     'TO_CONSOLE': True
@@ -46,6 +49,9 @@ DEFAULT_TYPE={
     'MAX_CHAR'  : (int,),
     "WAIT_TIME" : (int,float),
     "RETRY_SUB" : (int,float),
+    "LIMIT_429" : (float,),
+    "MAX_WAIT"  : (int,),
+    "FAIL_429"  : (int,),
     'OPT_DIR'   : (str,),
     'DEBUG'     : (type(None),bool),
     'TO_CONSOLE': (bool,)

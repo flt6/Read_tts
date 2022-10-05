@@ -4,14 +4,17 @@ from typing import Any,Union
 from consts import DEFAULT_CONFIG, DEFAULT_TYPE
 
 
-MAX_RETRY  : int
-MAX_TASK   : int
-MAX_CHAR   : int
-OPT_DIR    : str
-DEBUG      : bool
-TO_CONSOLE : bool
-WAIT_TIME  : Union[float,int]
-RETRY_SUB  : Union[float,int]
+MAX_RETRY : int
+MAX_TASK  : int
+MAX_CHAR  : int
+WAIT_TIME : Union[int,float]
+RETRY_SUB : Union[int,float]
+LIMIT_429 : int
+MAX_WAIT  : int
+FAIL_429  : int
+OPT_DIR   : str
+DEBUG     : Union[None,bool]
+TO_CONSOLE: bool
 
 def load():
     config = DEFAULT_CONFIG.copy()

@@ -277,7 +277,10 @@ class ToServer:
     def asyncDownload(self, chapters: list[Chapter], max_task: int = config.MAX_TASK):
         pool: list[Thread] = []
         retry: set[Chapter] = set()
-        with alive_bar(len(chapters)) as bar:
+        self.retry_len = 0
+        self.total_len = 0
+        stop_cnt=0
+        with alive_bar(len(chapters),bar="circles",dual_line=True) as bar:
             bar.title = "%02d task for one time" % max_task
             for i, chap in enumerate(chapters):
                 opt = self.optDir+'/'+chap.title
@@ -295,6 +298,30 @@ class ToServer:
                     pool = tmp.copy()
                     # This should be like `ptr.png`
                     self.logger.info("End async waiting.")
+
+                    total = bar.current()+1
+                    persent = -1
+                    if total-self.total_len == 0:
+                        persent = 1
+                    else:
+                        persent = 1-((len(retry)-self.retry_len)/(total-self.total_len))
+                        if total-self.total_len<config.FAIL_429:
+                            persent = 1
+                        self.logger.debug("total=%02d       total_len=%02d"%(total,self.total_len))
+                        self.logger.debug("len(retry)=%02d  retry_len=%02d"%(len(retry),self.retry_len))
+                        self.retry_len, self.total_len = len(retry), total
+                    self.logger.debug("persent= %f"%persent)
+                    if persent < config.LIMIT_429:
+                        stop_cnt+=1
+                        self.logger.error("429 Too many retries!!")
+                        for thr in pool:
+                            thr.join()
+                        t = 9+3*stop_cnt
+                        if t>config.MAX_WAIT:
+                            t=15
+                        self.logger.info("Sleep for %02d seconds"%t)
+                        sleep(t)
+                        self.logger.info("Finished")
             # ----------------------------------------------
             self.logger.info("Start last async waiting.")
             for thr in pool:
@@ -336,7 +363,7 @@ def _merge(dir: str, logger: Log, ch: list[Chapter], name: str, is_remove: bool)
 
 
 def _concat(tmp: list[str], name: str):
-    paths = ["Output/"+i for i in tmp]
+    paths = [config.OPT_DIR+"/"+i for i in tmp]
     cmd = [
         'ffmpeg',
         '-hide_banner',
@@ -345,7 +372,7 @@ def _concat(tmp: list[str], name: str):
         '-c',
         'copy',
         '-y',
-        "Output/"+name
+        config.OPT_DIR+"/"+name
     ]
     if paths != []:
         print(cmd)
@@ -355,7 +382,7 @@ def _concat(tmp: list[str], name: str):
 
 
 def reConcat():
-    l = listdir("Output")
+    l = listdir(config.OPT_DIR)
     name = ""
     tmp: list[str] = []
     for file in l:
@@ -398,10 +425,10 @@ def time_fmt(time: float):
 
 def redelete():
     try:
-        l = listdir("Output")
+        l = listdir(config.OPT_DIR)
         for i in l:
             if search(r"\s\(\d+\)\.mp3$", i) is not None:
-                path = "Output/"+i
+                path = config.OPT_DIR+"/"+i
                 if isfile(path):
                     remove(path)
     except Exception as e:

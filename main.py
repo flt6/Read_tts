@@ -96,7 +96,7 @@ class Main:
             if max_task < 1: 
                 max_task = 1
             logger.info("Start (New turn) retry.")
-            retry = self.ser.asyncDownload(list(retry),max_task)
+            retry = self.ser.asyncDownload(list(retry),int(max_task))
             cnt += 1
             if cnt > MAX_RETRY and len(retry) > 0:
                 logger.error("Too many retries for Getting shelf")
