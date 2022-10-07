@@ -18,7 +18,7 @@ class AppError(ServerError):
     def __init__(self, message: Any = None):
         super().__init__(message)
 
-class ZeroLengthError(RuntimeError):
+class UPSLimittedError(RuntimeError):
     def __init__(self, message: Any = None):
         super().__init__(message)
 
@@ -119,7 +119,7 @@ class ErrorHandler:
             msg = "File exists!"+err.args[0]
         elif self.src == "AsyncReq":
             msg = "Async request error!\n"
-            if isinstance(err,ZeroLengthError):
+            if isinstance(err,UPSLimittedError):
                 msg = "Audio length is zero."
             elif isinstance(err, RuntimeError):
                 msg += f"RE: {err}"

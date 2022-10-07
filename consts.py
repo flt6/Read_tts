@@ -58,3 +58,4 @@ DEFAULT_TYPE={
 }
 
 TTS_SUC = ResultReason.SynthesizingAudioCompleted
+TTS_CANCEL = ResultReason.Canceled

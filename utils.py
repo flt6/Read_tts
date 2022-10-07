@@ -15,7 +15,7 @@ from tts import tts
 
 from requests.exceptions import RequestException
 from exceptions import ErrorHandler
-from exceptions import ServerError, AppError, ZeroLengthError
+from exceptions import ServerError, AppError, UPSLimittedError
 
 from azure.cognitiveservices.speech.speech import ResultFuture
 from azure.cognitiveservices.speech import SpeechSynthesisResult
@@ -250,20 +250,25 @@ class ToServer:
         try:
             self.logger.debug(
                 "audio_duration="+str(ret.audio_duration))
-            if ret.audio_duration.total_seconds() == 0:
-                self.logger.error("audio_duration=0")
-                retry.add(chapters[j])
-                raise ZeroLengthError("Audio duration is zero.")
             if ret.reason != consts.TTS_SUC:
-                self.logger.debug("AsyncReq not success `get`")
-                self.logger.error(ret.reason)
-                self.logger.error(ret.cancellation_details)
-                self.logger.debug(chapters[j].idx)
-                self.logger.debug(
-                    "SSML Text: " + chapters[j].content)
+                if ret.reason == consts.TTS_CANCEL:
+                    detail = ret.cancellation_details
+                    if detail.error_code==429:
+                        self.logger.error("429: UPS limited error")
+                        raise UPSLimittedError(detail.error_details)
+                    self.logger.debug(detail)
+                else:
+                    self.logger.debug("AsyncReq not success `get`")
+                    self.logger.error(ret.reason)
+                    self.logger.error(ret.cancellation_details)
+                    self.logger.debug(chapters[j].idx)
+                    self.logger.debug(
+                        "SSML Text: " + chapters[j].content)
+                    raise RuntimeError("ret.reason=%s" % ret.reason)
+                if ret.audio_duration.total_seconds() == 0:
+                    self.logger.error("audio_duration=0")
+                    raise RuntimeError("audio_duration=0")
                 retry.add(chapters[j])
-                e = RuntimeError("ret.reason=%s" % ret.reason)
-                ErrorHandler(e, "AsyncReq", self.logger)()
         except BaseException as e:
             ErrorHandler(e, "AsyncReq", self.logger)()
             retry.add(chapters[j])
@@ -313,15 +318,16 @@ class ToServer:
                     self.logger.debug("persent= %f"%persent)
                     if persent < config.LIMIT_429:
                         stop_cnt+=1
-                        self.logger.error("429 Too many retries!!")
+                        self.logger.error("429 UPS Limitted.")
+                        self.logger.info("Waiting for all runnning jobs...")
                         for thr in pool:
                             thr.join()
                         t = 9+3*stop_cnt
                         if t>config.MAX_WAIT:
                             t=15
-                        self.logger.info("Sleep for %02d seconds"%t)
+                        self.logger.info("Sleep for %02d seconds..."%t)
                         sleep(t)
-                        self.logger.info("Finished")
+                        self.logger.info("UPS error wait end")
             # ----------------------------------------------
             self.logger.info("Start last async waiting.")
             for thr in pool:
