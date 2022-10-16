@@ -27,7 +27,7 @@ def req(param, caller="Requester", logger=None,
         url, args = param
         url = url.format(args[0], *[quote(str(i)) for i in args[1:]])
         getLogger("request").debug("url=%s,caller=%s" % (url, caller))
-        res = get(url)
+        res = get(url, timeout=config.TIMEOUT)
         if res.status_code != 200:
             raise ServerError(res.status_code)  # type: ignore
     except Exception as e:
@@ -134,7 +134,7 @@ class ToApp:
             self.logger.debug("Regular Expression match failed.")
             return False
         try:
-            res = get(consts.GET_SHELF.format(ip), timeout=3)
+            res = get(consts.GET_SHELF.format(ip), timeout=config.TIMEOUT)
             self.logger.debug("HTTP connect status_code=%d" % res.status_code)
             if res.status_code != 200:
                 raise ServerError(res.status_code)  # type: ignore
@@ -247,25 +247,23 @@ class ToServer:
         try:
             self.logger.debug(
                 "audio_duration="+str(ret.audio_duration))
+            if ret.reason == consts.TTS_CANCEL:
+                detail = ret.cancellation_details
+                if detail.error_code==429:
+                    self.logger.error("429: UPS limited error")
+                    raise UPSLimittedError(detail.error_details)
+                self.logger.debug(detail)
             if ret.reason != consts.TTS_SUC:
-                if ret.reason == consts.TTS_CANCEL:
-                    detail = ret.cancellation_details
-                    if detail.error_code==429:
-                        self.logger.error("429: UPS limited error")
-                        raise UPSLimittedError(detail.error_details)
-                    self.logger.debug(detail)
-                else:
-                    self.logger.debug("AsyncReq not success `get`")
-                    self.logger.error(ret.reason)
-                    self.logger.error(ret.cancellation_details)
-                    self.logger.debug(chapters[j].idx)
-                    self.logger.debug(
-                        "SSML Text: " + chapters[j].content)
-                    raise RuntimeError("ret.reason=%s" % ret.reason)
-                if ret.audio_duration.total_seconds() == 0:
-                    self.logger.error("audio_duration=0")
-                    raise RuntimeError("audio_duration=0")
-                retry.add(chapters[j])
+                self.logger.debug("AsyncReq not success `get`")
+                self.logger.error(ret.reason)
+                self.logger.error(ret.cancellation_details)
+                self.logger.debug(chapters[j].idx)
+                self.logger.debug(
+                    "SSML Text: " + chapters[j].content)
+                raise RuntimeError("ret.reason=%s" % ret.reason)
+            if ret.audio_duration.total_seconds() == 0:
+                self.logger.error("audio_duration=0")
+                raise RuntimeError("audio_duration=0")
         except BaseException as e:
             ErrorHandler(e, "AsyncReq", self.logger)()
             retry.add(chapters[j])

@@ -38,6 +38,7 @@ DEFAULT_CONFIG={
     "LIMIT_429" : 0.7,
     "MAX_WAIT"  : 20,
     "FAIL_429"  : 3,
+    "TIMEOUT"   : 3,
     'OPT_DIR'   : "Output",
     'DEBUG'     : False,
     'TO_CONSOLE': True
@@ -52,6 +53,7 @@ DEFAULT_TYPE={
     "LIMIT_429" : (float,),
     "MAX_WAIT"  : (int,),
     "FAIL_429"  : (int,),
+    "TIMEOUT"   : (int,float),
     'OPT_DIR'   : (str,),
     'DEBUG'     : (bool,),
     'TO_CONSOLE': (bool,)

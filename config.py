@@ -12,6 +12,7 @@ RETRY_SUB : Union[int,float]
 LIMIT_429 : int
 MAX_WAIT  : int
 FAIL_429  : int
+TIMEOUT   : Union[int,float]
 OPT_DIR   : str
 DEBUG     : bool
 TO_CONSOLE: bool
