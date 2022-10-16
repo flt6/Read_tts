@@ -1,17 +1,14 @@
-from consts import MODE_CHOOSE
-from config import MAX_RETRY, OPT_DIR, WAIT_TIME,RETRY_SUB, MAX_TASK
-from config import check
-from utils import ToApp, Trans, ToServer
-from utils import merge, time_fmt, reConcat, redelete
-from model import Book, Chapter
-from log import getLogger
-
-from exceptions import ErrorHandler
-from traceback import format_exc
 from shutil import copy
-from time import sleep, time
 from sys import exit
+from time import sleep, time
+from traceback import format_exc
 
+from config import MAX_RETRY, MAX_TASK, OPT_DIR, RETRY_SUB, WAIT_TIME, check
+from consts import MODE_CHOOSE
+from exceptions import ErrorHandler
+from log import getLogger
+from model import Book, Chapter
+from utils import ToApp, ToServer, Trans, merge, reConcat, redelete, time_fmt
 
 logger = getLogger("Main")
 

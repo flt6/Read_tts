@@ -1,9 +1,12 @@
-from requests.exceptions import RequestException
 from json.decoder import JSONDecodeError
 from traceback import extract_stack
 from typing import Any
-from log import getLogger
+
+from requests.exceptions import RequestException
+
 import config
+from log import getLogger
+
 
 class ServerError(Exception):
     def __init__(self, message: Any = None):

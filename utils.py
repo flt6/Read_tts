@@ -1,27 +1,24 @@
-from time import sleep
-from alive_progress import alive_bar
-from subprocess import run, PIPE
-from threading import Thread
-from requests.utils import quote  # type: ignore
-from requests import get
-from os.path import isfile, isdir
-from os import mkdir, remove, listdir
-from re import sub, match, search
 from html import escape
+from os import listdir, mkdir, remove
+from os.path import isdir, isfile
+from re import match, search, sub
+from subprocess import PIPE, run
+from threading import Thread
+from time import sleep
 
-from model import Book, ChapterList, Chapter
-from log import getLogger, Log
-from tts import tts
-
-from requests.exceptions import RequestException
-from exceptions import ErrorHandler
-from exceptions import ServerError, AppError, UPSLimittedError
-
-from azure.cognitiveservices.speech.speech import ResultFuture
+from alive_progress import alive_bar
 from azure.cognitiveservices.speech import SpeechSynthesisResult
+from azure.cognitiveservices.speech.speech import ResultFuture
+from requests import get
+from requests.exceptions import RequestException
+from requests.utils import quote  # type: ignore
 
-import consts
 import config
+import consts
+from exceptions import AppError, ErrorHandler, ServerError, UPSLimittedError
+from log import Log, getLogger
+from model import Book, Chapter, ChapterList
+from tts import tts
 
 
 def req(param, caller="Requester", logger=None,

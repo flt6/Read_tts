@@ -1,4 +1,5 @@
-from aspeak import SpeechToFileService, AudioFormat, FileFormat
+from aspeak import AudioFormat, FileFormat, SpeechToFileService
+
 from log import getLogger
 
 logger = getLogger("TTS")

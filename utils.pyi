@@ -1,8 +1,9 @@
-from azure.cognitiveservices.speech.speech import ResultFuture
-from typing import Iterator, Union, Optional
-from model import Book, Chapter, ChapterList
-from log import Log
+from typing import Iterator, Optional, Union
 
+from azure.cognitiveservices.speech.speech import ResultFuture
+
+from log import Log
+from model import Book, Chapter, ChapterList
 
 def req(
     url: tuple[str, list[str]],

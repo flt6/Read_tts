@@ -39,7 +39,7 @@ DEFAULT_CONFIG={
     "MAX_WAIT"  : 20,
     "FAIL_429"  : 3,
     'OPT_DIR'   : "Output",
-    'DEBUG'     : None,
+    'DEBUG'     : False,
     'TO_CONSOLE': True
 }
 
@@ -53,7 +53,7 @@ DEFAULT_TYPE={
     "MAX_WAIT"  : (int,),
     "FAIL_429"  : (int,),
     'OPT_DIR'   : (str,),
-    'DEBUG'     : (type(None),bool),
+    'DEBUG'     : (bool,),
     'TO_CONSOLE': (bool,)
 }
 

@@ -1,8 +1,8 @@
 import json
 from os.path import exists
-from typing import Any,Union
-from consts import DEFAULT_CONFIG, DEFAULT_TYPE
+from typing import Any, Union
 
+from consts import DEFAULT_CONFIG, DEFAULT_TYPE
 
 MAX_RETRY : int
 MAX_TASK  : int
@@ -13,7 +13,7 @@ LIMIT_429 : int
 MAX_WAIT  : int
 FAIL_429  : int
 OPT_DIR   : str
-DEBUG     : Union[None,bool]
+DEBUG     : bool
 TO_CONSOLE: bool
 
 def load():
@@ -22,8 +22,6 @@ def load():
         with open("config.json", "r", encoding="utf-8") as f:
             d = json.load(f)
         config.update(d)
-    if config["DEBUG"] is None:
-        config["DEBUG"] = exists("DEBUG")
     return config
 
 

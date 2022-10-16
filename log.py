@@ -1,8 +1,10 @@
-from logging import Logger, Formatter, FileHandler
-from logging import DEBUG, INFO, WARNING, ERROR, CRITICAL
+from logging import (CRITICAL, DEBUG, ERROR, INFO, WARNING, FileHandler,
+                     Formatter, Logger)
+from os import mkdir, path
 from traceback import format_exc
-from os import path, mkdir
+
 import config
+
 
 class Log(Logger):
     def __init__(self, name, show=True, debug=False) -> None:

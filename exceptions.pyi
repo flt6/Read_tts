@@ -1,6 +1,6 @@
-from typing import Union, Any
-from log import Logger
+from typing import Any, Union
 
+from log import Logger
 
 class ServerError: ...
 class AppError(ServerError): ...
