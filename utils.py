@@ -191,6 +191,7 @@ class Trans:
 
     def content_basic(self, chap: Chapter):
         con = chap.content
+        con = chap.title+"\n"+con
         lines = con.splitlines()
         totLines = len(lines)
         content = []
@@ -233,44 +234,45 @@ class ToServer:
 
     def _callback(self, task: ResultFuture, j, retry, chapters, bar):
         ret = task.get()
-        getLogger("_callback").debug(ret)
         self._deal(ret, j, retry, chapters, bar)
 
     def callback(self, task, j, retry: set[Chapter], chapters, bar):
         thr = Thread(target=self._callback, args=(
             task, j, retry, chapters, bar))
-        getLogger("callback").debug(thr)
         thr.start()
         return thr
 
     def _deal(self, ret: SpeechSynthesisResult, j, retry: set[Chapter], chapters, bar):
+        logger = getLogger("callback")
         try:
-            self.logger.debug(
+            logger.debug(
                 "audio_duration="+str(ret.audio_duration))
             if ret.reason == consts.TTS_CANCEL:
                 detail = ret.cancellation_details
+                logger.debug("Canceled")
+                logger.debug("idx=%d"%chapters[j].idx)
+                logger.debug("Detail: "+str(detail))
+                logger.debug("code: "+str(detail.error_code))
                 if detail.error_code==429:
-                    self.logger.error("429: UPS limited error")
+                    logger.error("429: UPS limited error")
                     raise UPSLimittedError(detail.error_details)
-                self.logger.debug(detail)
             if ret.reason != consts.TTS_SUC:
-                self.logger.debug("AsyncReq not success `get`")
-                self.logger.error(ret.reason)
-                self.logger.error(ret.cancellation_details)
-                self.logger.debug(chapters[j].idx)
-                self.logger.debug(
+                logger.debug("Error")
+                logger.error("Reason: "+str(ret.reason))
+                logger.debug("idx=%d"%chapters[j].idx)
+                logger.debug(
                     "SSML Text: " + chapters[j].content)
                 raise RuntimeError("ret.reason=%s" % ret.reason)
             if ret.audio_duration.total_seconds() == 0:
-                self.logger.error("audio_duration=0")
+                logger.error("audio_duration=0 and not due to 429")
                 raise RuntimeError("audio_duration=0")
         except BaseException as e:
-            ErrorHandler(e, "AsyncReq", self.logger)()
+            ErrorHandler(e, "AsyncReq", logger)()
             retry.add(chapters[j])
         retry_len = len(retry)
         total = 1 if bar.current() == 0 else bar.current()+1
         persent = 1-(retry_len/total)
-        bar.text = "|Retry %02d|Success persent: %0.2f%%" % (
+        bar.text = "Retry %02d | Success persent: %0.2f%%" % (
             retry_len, persent*100)
         bar()
 
@@ -286,7 +288,6 @@ class ToServer:
                 opt = self.optDir+'/'+chap.title
                 task = tts(chap.content, opt)
                 self.logger.debug(f"Create task {task}")
-                self.logger.debug(task)
                 pool.append(self.callback(task, i, retry, chapters, bar))
                 while len(pool) >= max_task:
                     self.logger.info("Start async waiting.")
