@@ -4,7 +4,7 @@ from time import sleep, time
 from traceback import format_exc
 
 from config import MAX_RETRY, MAX_TASK, OPT_DIR, RETRY_SUB, WAIT_TIME, check
-from consts import MODE_CHOOSE
+from consts import MODE_CHOOSE,lang
 from exceptions import ErrorHandler
 from log import getLogger
 from model import Book, Chapter
@@ -19,7 +19,7 @@ class Main:
         self.trans = Trans(type)
         self.ser = ToServer(optDir)
         self.optDir = optDir
-        logger.info("Class 'Main' initialized.")
+        logger.info(lang[15])
 
     def interactive(self):
         print(MODE_CHOOSE)
@@ -27,7 +27,7 @@ class Main:
         while not typ.isdigit():
             typ = input(">>> ")
             if not typ.isdigit():
-                print("Invalid mode.")
+                print(lang[16])
         typ = int(typ)
         if typ == 3:
             reConcat()
@@ -36,7 +36,7 @@ class Main:
             redelete()
             exit()
         self.app.init()
-        logger.debug("Getting shelf")
+        logger.debug(lang[17])
         shelf = self.app.get_shelf()
         book = self.app.choose_book(shelf)
         if typ == 1:
@@ -44,7 +44,7 @@ class Main:
         elif typ == 2:
             area = self.app.choose_single()
         else:
-            e = ValueError("Invalid `typ` %d" % typ)
+            e = ValueError(lang[18] % typ)
             ErrorHandler(e, "Main", logger, exit=True, wait=True)()
             raise AssertionError("This should never be executed.")
         return book, area
@@ -54,23 +54,23 @@ class Main:
         if chapList is None:
             logger.critical("chapList is None")
             exit(1)
-        logger.info("Begin to get Chapers")
+        logger.info(lang[19])
         logger.debug(str(area))
         logger.debug(str(len(chapList)))
         logger.debug(str(book.tot))
         chaps, retry = self.app.download_content([chapList[i] for i in area])
         cnt = 0
         while len(retry):
-            logger.info("Start (New turn) retry.")
+            logger.info(lang[20])
             ch, retry = self.app.download_content(retry)
             chaps.extend(ch)
             cnt += 1
             if cnt > MAX_RETRY and len(retry) > 0:
-                logger.error("Too many retries for Getting shelf")
-                logger.error("Articles that failed to download:")
+                logger.error(lang[21])
+                logger.error(lang[22])
                 logger.error(retry)
                 break
-        logger.info("Request to app finished.")
+        logger.info(lang[23])
         return chaps
 
     def textTrans(self, chaps: list[Chapter]):
@@ -82,22 +82,22 @@ class Main:
         return tem
 
     def tts(self, chaps: list[Chapter]):
-        logger.info("tts request started.")
+        logger.info(lang[24])
         retry = self.ser.asyncDownload(chaps)  # type: ignore
         cnt = 0
         max_task = MAX_TASK
         while len(retry):
-            logger.info("Start retry waiting.")
+            logger.info(lang[25])
             sleep(WAIT_TIME)
             max_task//=RETRY_SUB
             if max_task < 1: 
                 max_task = 1
-            logger.info("Start (New turn) retry.")
+            logger.info(lang[26])
             retry = self.ser.asyncDownload(list(retry),int(max_task))
             cnt += 1
             if cnt > MAX_RETRY and len(retry) > 0:
-                logger.error("Too many retries for Getting shelf")
-                logger.error("Articles that failed to download:")
+                logger.error(lang[27])
+                logger.error(lang[28])
                 logger.error(retry)
                 for chap in retry:
                     copy("fail.mp3", self.optDir+'/'+chap.title)
