@@ -225,6 +225,7 @@ class ToServer:
     def __init__(self, optDir):
         self.logger = getLogger("ToServer")
         self.optDir = optDir
+        self.total_time = 0
         self.createdir()
         self.logger.debug("Class 'ToServer' init successfully.")
 
@@ -247,6 +248,7 @@ class ToServer:
         try:
             logger.debug(
                 "audio_duration="+str(ret.audio_duration))
+            self.total_time += ret.audio_duration.total_seconds()/60
             if ret.reason == consts.TTS_CANCEL:
                 detail = ret.cancellation_details
                 logger.debug("Canceled")

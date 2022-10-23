@@ -44,6 +44,10 @@ class Trans:
 
 
 class ToServer:
+
+    optDir: str
+    total_time: float
+    
     def __init__(self, optDir: str): ...
     def createdir(self) -> None: ...
 

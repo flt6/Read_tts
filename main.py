@@ -141,6 +141,7 @@ def main(typ: int):
         t = time_fmt(end-bgn)
         logger.info("Totally used "+t)
         logger.info("Avarage time for each: %ds" % ((end-bgn)/length))
+        logger.info("Avarage: %.2fmin/s"%(main.ser.total_time/(end-bgn)))
 
     except SystemExit as e:
         logger.info(f"SystemExit with code {e.code} got, may exit not normally.")
