@@ -1,7 +1,7 @@
 # A simple TTS for TTS app
 
 This is a CIL program to fetch chapters from [Read App](https://github.com/gedoor/legado) and generate mp3 files.
-![Sample](/flt6/Read_tts/blob/master/images/intro.png)
+![Sample](images/intro.png)
 
 ## install
 
@@ -19,15 +19,25 @@ This is a CIL program to fetch chapters from [Read App](https://github.com/gedoo
 ## Usage
 
 - Open `Web Service` in Read App, and remember ip showed here.
-![get_ip](/flt6/Read_tts/blob/master/images/get_ip.png)
+
+![get_ip](images/get_ip.png)
+
 - Run this program, and type `1`.
-![intro](/flt6/Read_tts/blob/master/images/intro.png)
+
+![intro](images/intro.png)
+
 - Input app ip showed in App
-![ip](/flt6/Read_tts/blob/master/images/ip.png)
+
+![ip](images/ip.png)
+
 - Choose book with book id.
-![choose](/flt6/Read_tts/blob/master/images/choose.png)
+
+![choose](images/choose.png)
+
 - Type start id and end id. You can leave blank in start id which means from the current chapter showed like `(<id>: <Title>)`. Id may be vary from -5 to +5, and you can refer to the start id.
-![book](/flt6/Read_tts/blob/master/images/book.png)
+
+![book](images/book.png)
+
 - Then you can wait the program finish!
 
 ## Manu
