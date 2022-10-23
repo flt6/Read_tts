@@ -291,6 +291,7 @@ class ToServer:
                 task = tts(chap.content, opt)
                 self.logger.debug(f"Create task {task}")
                 pool.append(self.callback(task, i, retry, chapters, bar))
+                if len(pool) < max_task: continue
                 self.logger.info("Start waiting.")
                 while len(pool) >= max_task:
                     sleep(2)
