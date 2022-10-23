@@ -1,84 +1,87 @@
-# A simple TTS for TTS app
+# 简单的听书音频生成
 
-This is a CIL program to fetch chapters from [Read App](https://github.com/gedoor/legado) and generate mp3 files.
+这是一个为[阅读3](https://github.com/gedoor/legado)制作的生成章节音频的程序。
+由于作者能力，仅仅是CLI工具。
 ![Sample](images/intro.png)
 
-## install
+## 安装
 
-### with python environment
+### 拥有python环境和基础
 
-- clone this responsity.
-- install dependencies: `pip install -r requirment.txt`
-- download [ffmpeg.exe](https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.7z) and save it in the same directory as the program or set in `path`.
+- 克隆当前存储库
+- 安装依赖: `pip install -r requirment.txt`
+- 下载[ffmpeg.exe](https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.7z)并保存在当前程序相同文件夹，或在`path`中设置.
 
-### withoust python environment
+### 没有python环境
 
-- download executable file in the latest Release.
-- download [ffmpeg.exe](https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.7z) and save it in the same directory as the program or set in `path`.
+- 在最新的[Release](https://github.com/flt6/Read_tts/releases)中下载`main.exe`
+- 下载[ffmpeg.exe](https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.7z)并保存在当前程序相同文件夹，或在`path`中设置.
 
-## Usage
+## 用法
 
-- Open `Web Service` in Read App, and remember ip showed here.
+- 在阅读app中打开`Web 服务`, 并且记录显示的ip地址。
 
 ![get_ip](images/get_ip.png)
 
-- Run this program, and type `1`.
+- 运行这个程序, 并输入`1`.
 
 ![intro](images/intro.png)
 
-- Input app ip showed in App
+- 输入记录的ip地址
 
 ![ip](images/ip.png)
 
-- Choose book with book id.
+- 输入书籍id
 
 ![choose](images/choose.png)
 
-- Type start id and end id. You can leave blank in start id which means from the current chapter showed like `(<id>: <Title>)`. Id may be vary from -5 to +5, and you can refer to the start id.
+- 输入开始和结束的页面id，您可以在开始处留空，这意味着选择当前章节。提示格式： `(<id>: <标题>)`. id有时会由于书源造成误差, 您可以根据开始章节的id数据计算这个误差。
 
 ![book](images/book.png)
 
-- Then you can wait the program finish!
+- 接着等待程序运行结束即可！
 
-## Manu
+## 菜单
 
 ### 1. Basic
 
-Basic mode, you can run it by following promots.
+基础模式，您可以根据交互提示和上述内容使用。
 
 ### 2. Fix
 
-If you find text like `Retry (for fix mode)`, you may need this mode. That means some of chapters failed for many times.(You can set this value in [`MAX_RETRY`](#configurations)) If you meet this, you can use this mode and type numbers showed after `Retry (for fix mode)`, and it will run like basic mode.
+如果你看见 `Retry (for fix mode)`, 那么你便需要运行这个模式。这意味着某个章节的音频合成失败了太多次.(你可以通过[`MAX_RETRY`](#configurations)修改这个数据) 你可以复制 `Retry (for fix mode)`后的数据并输入在提示中, 然后程序便会像标准模式运行。
 
 ### 3. Concat
 
-If the pragram is exit unexpectedly, there will be files like `340_第xxx章xxx (1).mp3`. You can run this mode, and it'll automatic fix these files. **ATTENTION: IF ONE CHAPTER IS ONLY DOWNLOAD PARTLY, THE AUDIO CONDITION MAY BE UNKOWN**
+如果你的程序意外退出, 那么文件夹中便会出现像 `340_第xxx章xxx (1).mp3`这样的文件。如果你遇到了这个情况，你可以运行这个模式自动修复这个错误。**注意: 如果某个章节下载了部分，那么可能出现未知情况（通常出现于最后几个）**
 
 ### 4. Delete temporary files
 
-If you see files like `340_第xxx章xxx (1).mp3` for the last chapter, this is an known bug. You can run this to fix it.
+如果你在输出文件夹中发现`340_第xxx章xxx (1).mp3`或者控制台中有`ERROR: _merge: Permission denied!`，这是一个**已知bug**（还没调试明白，如果谁有思路，请麻烦提一下Issue）. 你可以通过运行这个模式来修复。<sup>[3](#Notes)</sup>
 
-## configurations
+## 配置
 
-|name|type|default|mean|
+你可以运行一次主程序，便会生成`config.json`，并附有默认配置。你可以修改，或者使用自定义json，这个json必须是原json的子集。程序会自动检查类型和key。
+|名称|类型|默认|含义|
 |-|-|-|-|
-|MAX_RETRY|int|5|The max retry when fail|
-|MAX_TASK|int|10|The max taks to run at the same time|
-|MAX_CHAR|int|1500|The max character for one audio, you can refer to [this](https://github.com/kxxt/aspeak#limitations)|
-|WAIT_TIME|int/float|5|Wait time during two retries|
-|RETRY_SUB|int/float|2|When starting retry, `MAX_TASK` will be divided this value<sup>[1](#Notes)</sup>|
-|LIMIT_429|float|0.7|Stop multiple task running and wait all tasks to finish, and wait for some time to avoid limited by Azure([Code 429](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Status/429)).<sup>[2](#Notes)</sup>|
-|MAX_WAIT|int|20|Max time to wait<sup>[2](#Notes)</sup>|
-|FAIL_429|int|3|Min tasks ran<sup>[2](#Notes)</sup>|
-|TIMEOUT|int/float|3|Timeout when connecting to App|
-|OPT_DIR|int|Output|Output folder|
-|DEBUG|bool|`false`|Show debug infomation|
-|TO_CONSOLE|bool|`true`|Show log(**including INFO and ERROR info**) to console|
+|MAX_RETRY|int|5|重试次数最大值|
+|MAX_TASK|int|10|最大并行任务数|
+|MAX_CHAR|int|1500|单个音频最大字数, 你可以查看[这个](https://github.com/kxxt/aspeak#limitations)|
+|WAIT_TIME|int/float|5|两次重试间等待时间|
+|RETRY_SUB|int/float|2|当重试时，任务数会除以`MAX_TASK`<sup>[1](#Notes)</sup>|
+|LIMIT_429|float|0.7|终止并行, 并等待一些时间来避免Azure的限制([429异常](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Status/429)).<sup>[2](#Notes)</sup>|
+|MAX_WAIT|int|20|最大等待时间<sup>[2](#Notes)</sup>|
+|FAIL_429|int|3|最小任务完成数<sup>[2](#Notes)</sup>|
+|TIMEOUT|int/float|3|链接到app的超时值（单位：秒）|
+|OPT_DIR|int|Output|输出文件夹|
+|DEBUG|bool|`false`|显示调试信息|
+|TO_CONSOLE|bool|`true`|在控制待中显示日志(**包括INFO和ERROR信息**)|
 
-### Notes
+## Notes
 
-1. If any audio failed to synthesize, this program will retry to synthesize for `MAX_RETRY` times. And the multiple tasks count will divide `RETRY_SUB`, and wait `WAIT_TIME` seconds.
-2. We used module `aspeak` to synthesize audio, but there are some [limitations](https://github.com/kxxt/aspeak#limitations). There is a limitation not mentioned in that page. Task can't be running for too many times. I set a fix method: If failing persent for over `LIMIT_429` times, and over `FAIL_429` tasks have ran, the program will wait for `9+3*stop_cnt`. Var `stop_cnt` shouldn't over `MAX_WAIT`, if so, the program will set `stop_cnt` to `15`
+1. 如果音频合成失败，程序会重试`MAX_RETRY`次。在重试后，同时运行的任务会除被以`RETRY_SUB`，并且等待`WAIT_TIME`秒。
+2. 我使用了`aspeak`模块来合成音频，但是只有一些[限制](https://github.com/kxxt/aspeak#limitations)。其中还有一个没有被记录的限制：不能短时间内合成多次。如果合成失败率大于`LIMIT_429`，并且完成（失败）了`FAIL_429`个音频，程序会等待正在运行的所有任务结束，然后等待`9+3*stop_cnt`。其中，变量`stop_cnt`是总失败次数，并且等待时间不会超过`MAX_WAIT`。如果超过，便会将等待时间固定为15s。
+3. 最后一个文件好像会被ffmpeg或者python进程占用，这似乎不是我的代码的问题，因为只有在windows平台上出现。
 
 ## FAQ
 
