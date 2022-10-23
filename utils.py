@@ -207,7 +207,7 @@ class Trans:
         return content
 
     def title(self, chap: Chapter):
-        title = sub(r'''[\*\/\\\|\<\>\? \:\.\'\"\!\s]''', "", chap.title)
+        title = sub(r'''[\*\/\\\|\<\>\? \:\.\'\"\!]''', "", chap.title)
         title = "%03d" % chap.idx+"_"+title
         return title
 
@@ -289,8 +289,8 @@ class ToServer:
                 task = tts(chap.content, opt)
                 self.logger.debug(f"Create task {task}")
                 pool.append(self.callback(task, i, retry, chapters, bar))
+                self.logger.info("Start waiting.")
                 while len(pool) >= max_task:
-                    self.logger.info("Start async waiting.")
                     sleep(2)
                     tmp = []
                     for thr in pool:
@@ -298,7 +298,6 @@ class ToServer:
                             tmp.append(thr)
                     pool = tmp.copy()
                     # This should be like `ptr.png`
-                    self.logger.info("End async waiting.")
 
                     total = bar.current()+1
                     persent = -1
@@ -324,6 +323,7 @@ class ToServer:
                         self.logger.info("Sleep for %02d seconds..."%t)
                         sleep(t)
                         self.logger.info("UPS error wait end")
+                self.logger.info("End waiting.")
             # ----------------------------------------------
             self.logger.info("Start last async waiting.")
             for thr in pool:
