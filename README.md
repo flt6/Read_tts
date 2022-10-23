@@ -14,7 +14,7 @@
 
 ### 没有python环境
 
-- 在最新的[Release](https://github.com/flt6/Read_tts/releases)中下载`main.exe`
+- 在最新的[Release](https://github.com/flt6/Read_tts/releases/latest)中下载`main.exe`
 - 下载[ffmpeg.exe](https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.7z)并保存在当前程序相同文件夹，或在`path`中设置.
 
 ## 用法
