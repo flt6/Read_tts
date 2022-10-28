@@ -19,7 +19,7 @@ class Main:
         self.trans = Trans(type)
         self.ser = ToServer(optDir)
         self.optDir = optDir
-        logger.info(lang[15])
+        logger.info(lang["main"]["init"])
 
     def interactive(self):
         print(MODE_CHOOSE)
@@ -27,7 +27,7 @@ class Main:
         while not typ.isdigit():
             typ = input(">>> ")
             if not typ.isdigit():
-                print(lang[16])
+                print(lang["main"]["mode_invalid"])
         typ = int(typ)
         if typ == 3:
             reConcat()
@@ -36,7 +36,7 @@ class Main:
             redelete()
             exit()
         self.app.init()
-        logger.debug(lang[17])
+        logger.debug(lang["main"]["shelf"])
         shelf = self.app.get_shelf()
         book = self.app.choose_book(shelf)
         if typ == 1:
@@ -44,7 +44,7 @@ class Main:
         elif typ == 2:
             area = self.app.choose_single()
         else:
-            e = ValueError(lang[18] % typ)
+            e = ValueError(lang["main"]["typ_invalid"] % typ)
             ErrorHandler(e, "Main", logger, exit=True, wait=True)()
             raise AssertionError("This should never be executed.")
         return book, area
@@ -54,60 +54,60 @@ class Main:
         if chapList is None:
             logger.critical("chapList is None")
             exit(1)
-        logger.info(lang[19])
+        logger.info(lang["main"]["chap"])
         logger.debug(str(area))
         logger.debug(str(len(chapList)))
         logger.debug(str(book.tot))
         chaps, retry = self.app.download_content([chapList[i] for i in area])
         cnt = 0
         while len(retry):
-            logger.info(lang[20])
+            logger.info(lang["main"]["retry_st"])
             ch, retry = self.app.download_content(retry)
             chaps.extend(ch)
             cnt += 1
             if cnt > MAX_RETRY and len(retry) > 0:
-                logger.error(lang[21])
-                logger.error(lang[22])
+                logger.error(lang["main"]["fail1"])
+                logger.error(lang["main"]["fail2"])
                 logger.error(retry)
                 break
-        logger.info(lang[23])
+        logger.info(lang["main"]["app_suc"])
         return chaps
 
     def textTrans(self, chaps: list[Chapter]):
-        logger.info("Trans start.")
+        logger.info(lang["main"]["trans_st"])
         tem = []
         for chap in chaps:
             tem.extend(self.trans(chap))
-        logger.info("Trans completed.")
+        logger.info(lang["main"]["trans_end"])
         return tem
 
     def tts(self, chaps: list[Chapter]):
-        logger.info(lang[24])
+        logger.info(lang["main"]["retry_st"])
         retry = self.ser.asyncDownload(chaps)  # type: ignore
         cnt = 0
         max_task = MAX_TASK
         while len(retry):
-            logger.info(lang[25])
+            logger.info(lang["main"]["retry_st"])
             sleep(WAIT_TIME)
             max_task//=RETRY_SUB
             if max_task < 1: 
                 max_task = 1
-            logger.info(lang[26])
+            logger.info(lang["main"]["retry_st"])
             retry = self.ser.asyncDownload(list(retry),int(max_task))
             cnt += 1
             if cnt > MAX_RETRY and len(retry) > 0:
-                logger.error(lang[27])
-                logger.error(lang[28])
+                logger.error(lang["main"]["fail1"])
+                logger.error(lang["main"]["fail2"])
                 logger.error(retry)
                 for chap in retry:
                     copy("fail.mp3", self.optDir+'/'+chap.title)
                 return retry
-        logger.info("tts completed.")
+        logger.info(lang["main"]["tts_end"])
 
     def merge(self, chaps: list[Chapter]):
-        logger.info("Start merge mp3")
+        logger.info(lang["main"]["mer_st"])
         merge(chaps, self.optDir, True)
-        logger.info("merge completed.")
+        logger.info(lang["main"]["mer_end"])
 
     def __call__(self):
         book, area = self.interactive()

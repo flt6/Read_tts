@@ -61,7 +61,7 @@ DEFAULT_TYPE={
 }
 
 try:
-    with open("lang.json","r",encoding="utf-8") as f:
+    with open("lang_en_d.json","r",encoding="utf-8") as f:
         lang = load(f)
 except FileNotFoundError:
     print("File `lang.json` not found!")
