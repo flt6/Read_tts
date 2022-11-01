@@ -16,6 +16,8 @@ TIMEOUT   : Union[int,float]
 OPT_DIR   : str
 DEBUG     : bool
 TO_CONSOLE: bool
+LANG_FILE : str
+lang      : dict[str,dict]
 
 def load():
     config = DEFAULT_CONFIG.copy()
@@ -45,8 +47,21 @@ def check():
         exit(1)
 
 
+def load_lang() -> dict:
+    try:
+        with open(LANG_FILE,"r",encoding="utf-8") as f:
+            lang = json.load(f)
+            return {"lang":lang}
+    except FileNotFoundError:
+        print("File `lang.json` not found!")
+        exit(-1)
+    except json.JSONDecodeError:
+        print("`lang.json` is invalid!")
+        exit(-1)
+
 if __name__ == "__main__":
     check()
     print("Config is valid.")
 else:
     globals().update(load())
+    globals().update(load_lang())

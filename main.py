@@ -3,7 +3,8 @@ from sys import exit
 from time import sleep, time
 from traceback import format_exc
 
-from config import MAX_RETRY, MAX_TASK, OPT_DIR, RETRY_SUB, WAIT_TIME, check
+from config import MAX_RETRY, MAX_TASK, OPT_DIR, RETRY_SUB, WAIT_TIME
+from config import check,lang
 from consts import MODE_CHOOSE
 from exceptions import ErrorHandler
 from log import getLogger
@@ -19,7 +20,7 @@ class Main:
         self.trans = Trans(type)
         self.ser = ToServer(optDir)
         self.optDir = optDir
-        logger.info("Class 'Main' initialized.")
+        logger.info(lang["main"]["init"])
 
     def interactive(self):
         print(MODE_CHOOSE)
@@ -27,7 +28,7 @@ class Main:
         while not typ.isdigit():
             typ = input(">>> ")
             if not typ.isdigit():
-                print("Invalid mode.")
+                print(lang["main"]["mode_invalid"])
         typ = int(typ)
         if typ == 3:
             reConcat()
@@ -36,7 +37,7 @@ class Main:
             redelete()
             exit()
         self.app.init()
-        logger.debug("Getting shelf")
+        logger.debug(lang["main"]["shelf"])
         shelf = self.app.get_shelf()
         book = self.app.choose_book(shelf)
         if typ == 1:
@@ -44,7 +45,7 @@ class Main:
         elif typ == 2:
             area = self.app.choose_single()
         else:
-            e = ValueError("Invalid `typ` %d" % typ)
+            e = ValueError(lang["main"]["typ_invalid"] % typ)
             ErrorHandler(e, "Main", logger, exit=True, wait=True)()
             raise AssertionError("This should never be executed.")
         return book, area
@@ -54,60 +55,60 @@ class Main:
         if chapList is None:
             logger.critical("chapList is None")
             exit(1)
-        logger.info("Begin to get Chapers")
+        logger.info(lang["main"]["chap"])
         logger.debug(str(area))
         logger.debug(str(len(chapList)))
         logger.debug(str(book.tot))
         chaps, retry = self.app.download_content([chapList[i] for i in area])
         cnt = 0
         while len(retry):
-            logger.info("Start (New turn) retry.")
+            logger.info(lang["main"]["retry_st"])
             ch, retry = self.app.download_content(retry)
             chaps.extend(ch)
             cnt += 1
             if cnt > MAX_RETRY and len(retry) > 0:
-                logger.error("Too many retries for Getting shelf")
-                logger.error("Articles that failed to download:")
+                logger.error(lang["main"]["fail1"])
+                logger.error(lang["main"]["fail2"])
                 logger.error(retry)
                 break
-        logger.info("Request to app finished.")
+        logger.info(lang["main"]["app_suc"])
         return chaps
 
     def textTrans(self, chaps: list[Chapter]):
-        logger.info("Trans start.")
+        logger.info(lang["main"]["trans_st"])
         tem = []
         for chap in chaps:
             tem.extend(self.trans(chap))
-        logger.info("Trans completed.")
+        logger.info(lang["main"]["trans_end"])
         return tem
 
     def tts(self, chaps: list[Chapter]):
-        logger.info("tts request started.")
+        logger.info(lang["main"]["retry_st"])
         retry = self.ser.asyncDownload(chaps)  # type: ignore
         cnt = 0
         max_task = MAX_TASK
         while len(retry):
-            logger.info("Start retry waiting.")
+            logger.info(lang["main"]["retry_st"])
             sleep(WAIT_TIME)
             max_task//=RETRY_SUB
             if max_task < 1: 
                 max_task = 1
-            logger.info("Start (New turn) retry.")
+            logger.info(lang["main"]["retry_st"])
             retry = self.ser.asyncDownload(list(retry),int(max_task))
             cnt += 1
             if cnt > MAX_RETRY and len(retry) > 0:
-                logger.error("Too many retries for Getting shelf")
-                logger.error("Articles that failed to download:")
+                logger.error(lang["main"]["fail1"])
+                logger.error(lang["main"]["fail2"])
                 logger.error(retry)
                 for chap in retry:
                     copy("fail.mp3", self.optDir+'/'+chap.title)
                 return retry
-        logger.info("tts completed.")
+        logger.info(lang["main"]["tts_end"])
 
     def merge(self, chaps: list[Chapter]):
-        logger.info("Start merge mp3")
+        logger.info(lang["main"]["mer_st"])
         merge(chaps, self.optDir, True)
-        logger.info("merge completed.")
+        logger.info(lang["main"]["mer_end"])
 
     def __call__(self):
         book, area = self.interactive()
@@ -117,13 +118,13 @@ class Main:
         self.merge(chaps)
         if retry is not None:
             retry = set(retry)
-            logger.info("Retry (for fix mode): " +
+            logger.info(lang["main"]["all_failed"] +
                   " ".join([str(i.idx) for i in retry]))
             k = len(retry)/len(chaps)
             if k > 0.7:
-                logger.info("There are too many instances needed to retry for 5 times")
-                logger.info("Retry/Total: %.2f%%"%k*100)
-                logger.info("You may need to decrease the muliple requests number (`MAX_TASK` in config.json)")
+                logger.info(lang["main"]["too_many_failed_1"])
+                logger.info(lang["main"]["too_many_failed_2"]%k*100)
+                logger.info(lang["main"]["too_many_failed_3"])
         redelete()
         return len(chaps)
 
@@ -139,9 +140,9 @@ def main(typ: int):
             exit()
         end = time()
         t = time_fmt(end-bgn)
-        logger.info("Totally used "+t)
-        logger.info("Avarage time for each: %ds" % ((end-bgn)/length))
-        logger.info("Avarage: %.2fmin/s"%(main.ser.total_time/(end-bgn)))
+        logger.info(lang["main"]["end_1"]+t)
+        logger.info(lang["main"]["end_2"] % ((end-bgn)/length))
+        logger.info(lang["main"]["end_3"]%(main.ser.total_time/(end-bgn)))
 
     except SystemExit as e:
         logger.info(f"SystemExit with code {e.code} got, may exit not normally.")

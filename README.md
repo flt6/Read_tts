@@ -76,6 +76,12 @@
 |OPT_DIR|int|Output|输出文件夹|
 |DEBUG|bool|`false`|显示调试信息|
 |TO_CONSOLE|bool|`true`|在控制待中显示日志(**包括INFO和ERROR信息**)|
+|LANG_FILE|str|`lang_en.json`|语言文件名|
+
+## 语言
+
+目前已制作两种语言的语言数据，默认为英文，可以在`config.json`中的修改`LANG_FILE`。
+目前已有`lang_chk.py`检验语言文件，**但是运行方式过于草率，可能会出现安全问题，请仅用于已知来源文件！**
 
 ## Notes
 

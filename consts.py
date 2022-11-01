@@ -41,7 +41,8 @@ DEFAULT_CONFIG={
     "TIMEOUT"   : 3,
     'OPT_DIR'   : "Output",
     'DEBUG'     : False,
-    'TO_CONSOLE': True
+    'TO_CONSOLE': True,
+    'LANG_FILE' : "lang_en.json"
 }
 
 DEFAULT_TYPE={
@@ -56,8 +57,10 @@ DEFAULT_TYPE={
     "TIMEOUT"   : (int,float),
     'OPT_DIR'   : (str,),
     'DEBUG'     : (bool,),
-    'TO_CONSOLE': (bool,)
+    'TO_CONSOLE': (bool,),
+    'LANG_FILE' : (str,)
 }
+
 
 TTS_SUC = ResultReason.SynthesizingAudioCompleted
 TTS_CANCEL = ResultReason.Canceled

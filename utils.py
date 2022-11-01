@@ -72,10 +72,10 @@ class ToApp:
         for i in range(len(shelf)):
             book = Book(**shelf[i])
             if not book.available:
-                self.logger.debug("Book not available")
+                self.logger.debug(config.lang["utils"]["ToApp"]["not_avai"])
                 continue
             if book.idx == 0:
-                self.logger.debug(f"No ChaperIndex.")
+                self.logger.debug(config.lang["utils"]["ToApp"]["no_chap"])
                 # continue
             tip = consts.CHOOSEBOOK % (
                 i+1,
@@ -104,7 +104,7 @@ class ToApp:
         return range(bgn, to)
 
     def choose_single(self):
-        chaps = input("chapters(eg: '1 2 3'): ").strip().split(" ")
+        chaps = input(config.lang["utils"]["ToApp"]["retry_pro"]).strip().split(" ")
         return list({int(i) for i in chaps})
 
     def get_charpter_list(self, book: Book):
@@ -131,16 +131,16 @@ class ToApp:
 
     def _testIP(self, ip: str):
         if not match(r"(\d{1,3}\.){3}\d{1,3}", ip):
-            self.logger.debug("Regular Expression match failed.")
+            self.logger.debug(config.lang["utils"]["ToApp"]["re_fail"])
             return False
         try:
             res = get(consts.GET_SHELF.format(ip), timeout=config.TIMEOUT)
-            self.logger.debug("HTTP connect status_code=%d" % res.status_code)
+            self.logger.debug(config.lang["utils"]["ToApp"]["http_dbg"] % res.status_code)
             if res.status_code != 200:
                 raise ServerError(res.status_code)  # type: ignore
             return True
         except RequestException:
-            self.logger.debug("Can't connect to server")
+            self.logger.debug(config.lang["utils"]["ToApp"]["ser_fail"])
             return False
         except Exception as e:
             ErrorHandler(e, "testIP", self.logger, 2)()
@@ -169,13 +169,13 @@ class ToApp:
                 return
             else:
                 self.logger.debug("_testIP() returned False")
-                print("Can't connect to APP.")
+                print(config.lang["utils"]["ToApp"]["app_fail"])
 
     def saveIP(self):
         if isdir("ip.conf"):
-            print("Directory 'ip.conf' already exists.")
-            print("Please delete it first, or IP can't be saved.")
-            e = FileExistsError("Directory 'ip.conf' exists.")
+            print(config.lang["utils"]["ToApp"]["dir_fail1"])
+            print(config.lang["utils"]["ToApp"]["dir_fail2"])
+            e = FileExistsError(config.lang["utils"]["ToApp"]["dir_fail3"])
             ErrorHandler(e, "ToApp")()
             return
         try:
@@ -227,7 +227,7 @@ class ToServer:
         self.optDir = optDir
         self.total_time = 0
         self.createdir()
-        self.logger.debug("Class 'ToServer' init successfully.")
+        self.logger.debug(config.lang["utils"]["ToSer"]["init"])
 
     def createdir(self):
         if not isdir(self.optDir):
@@ -256,17 +256,17 @@ class ToServer:
                 logger.debug("Detail: "+str(detail))
                 logger.debug("code: "+str(detail.error_code))
                 if detail.error_code==429:
-                    logger.error("429: UPS limited error")
+                    logger.error(config.lang["utils"]["ToSer"]["429"])
                     raise UPSLimittedError(detail.error_details)
             if ret.reason != consts.TTS_SUC:
                 logger.debug("Error")
-                logger.error("Reason: "+str(ret.reason))
+                logger.error(config.lang["utils"]["ToSer"]["fail"]+str(ret.reason))
                 logger.debug("idx=%d"%chapters[j].idx)
                 logger.debug(
                     "SSML Text: " + chapters[j].content)
                 raise RuntimeError("ret.reason=%s" % ret.reason)
             if ret.audio_duration.total_seconds() == 0:
-                logger.error("audio_duration=0 and not due to 429")
+                logger.error(config.lang["utils"]["ToSer"]["fail_not_429"])
                 raise RuntimeError("audio_duration=0")
         except BaseException as e:
             ErrorHandler(e, "AsyncReq", logger)()
@@ -274,7 +274,7 @@ class ToServer:
         retry_len = len(retry)
         total = 1 if bar.current() == 0 else bar.current()+1
         persent = 1-(retry_len/total)
-        bar.text = "Retry %02d | Success persent: %0.2f%%" % (
+        bar.text = config.lang["utils"]["ToSer"]["retry_pro"] % (
             retry_len, persent*100)
         bar()
 
