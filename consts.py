@@ -1,5 +1,4 @@
 from azure.cognitiveservices.speech import ResultReason  # type: ignore
-from json import JSONDecodeError, load
 
 SSML_MODEL = '''<speak xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="http://www.w3.org/2001/mstts" xmlns:emo="http://www.w3.org/2009/10/emotionml" version="1.0" xml:lang="en-US">
     <voice name="zh-CN-YunyeNeural">
@@ -42,7 +41,8 @@ DEFAULT_CONFIG={
     "TIMEOUT"   : 3,
     'OPT_DIR'   : "Output",
     'DEBUG'     : False,
-    'TO_CONSOLE': True
+    'TO_CONSOLE': True,
+    'LANG_FILE' : "lang_en.json"
 }
 
 DEFAULT_TYPE={
@@ -57,16 +57,10 @@ DEFAULT_TYPE={
     "TIMEOUT"   : (int,float),
     'OPT_DIR'   : (str,),
     'DEBUG'     : (bool,),
-    'TO_CONSOLE': (bool,)
+    'TO_CONSOLE': (bool,),
+    'LANG_FILE' : (str,)
 }
 
-try:
-    with open("lang_en_d.json","r",encoding="utf-8") as f:
-        lang = load(f)
-except FileNotFoundError:
-    print("File `lang.json` not found!")
-except JSONDecodeError:
-    print("`lang.json` is invalid!")
 
 TTS_SUC = ResultReason.SynthesizingAudioCompleted
 TTS_CANCEL = ResultReason.Canceled

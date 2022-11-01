@@ -3,8 +3,9 @@ from sys import exit
 from time import sleep, time
 from traceback import format_exc
 
-from config import MAX_RETRY, MAX_TASK, OPT_DIR, RETRY_SUB, WAIT_TIME, check
-from consts import MODE_CHOOSE,lang
+from config import MAX_RETRY, MAX_TASK, OPT_DIR, RETRY_SUB, WAIT_TIME
+from config import check,lang
+from consts import MODE_CHOOSE
 from exceptions import ErrorHandler
 from log import getLogger
 from model import Book, Chapter
@@ -117,13 +118,13 @@ class Main:
         self.merge(chaps)
         if retry is not None:
             retry = set(retry)
-            logger.info("Retry (for fix mode): " +
+            logger.info(lang["main"]["all_failed"] +
                   " ".join([str(i.idx) for i in retry]))
             k = len(retry)/len(chaps)
             if k > 0.7:
-                logger.info("There are too many instances needed to retry for 5 times")
-                logger.info("Retry/Total: %.2f%%"%k*100)
-                logger.info("You may need to decrease the muliple requests number (`MAX_TASK` in config.json)")
+                logger.info(lang["main"]["too_many_failed_1"])
+                logger.info(lang["main"]["too_many_failed_2"]%k*100)
+                logger.info(lang["main"]["too_many_failed_3"])
         redelete()
         return len(chaps)
 
@@ -139,9 +140,9 @@ def main(typ: int):
             exit()
         end = time()
         t = time_fmt(end-bgn)
-        logger.info("Totally used "+t)
-        logger.info("Avarage time for each: %ds" % ((end-bgn)/length))
-        logger.info("Avarage: %.2fmin/s"%(main.ser.total_time/(end-bgn)))
+        logger.info(lang["main"]["end_1"]+t)
+        logger.info(lang["main"]["end_2"] % ((end-bgn)/length))
+        logger.info(lang["main"]["end_3"]%(main.ser.total_time/(end-bgn)))
 
     except SystemExit as e:
         logger.info(f"SystemExit with code {e.code} got, may exit not normally.")
