@@ -1,20 +1,25 @@
-from aspeak import AudioFormat, FileFormat, SpeechToFileService
+from mytts import SpeechSynthesizer, AudioOutputConfig, SpeechConfig
+from mytts.enums import SpeechSynthesisOutputFormat
+import asyncio
 
 from log import getLogger
 
 logger = getLogger("TTS")
-provider = None
-fmt = AudioFormat(FileFormat.MP3, -1)
-
-
-def init():
-    global provider
-    logger.info("Start init provider")
-    provider = SpeechToFileService(locale="zh-CN", audio_format=fmt)
-    logger.info("Succeeded.")
+fmt = SpeechSynthesisOutputFormat.Audio24Khz48KBitRateMonoMp3
+cfg = SpeechConfig()
+cfg.set_speech_synthesis_output_format(fmt)
 
 
 def tts(ssml: str, path: str):
-    if provider is None:
-        init()
-    return provider.ssml_to_speech_async(ssml, path=path)  # type: ignore
+    audio_cfg = AudioOutputConfig(filename=path)
+    provider = SpeechSynthesizer(cfg, audio_cfg)
+    return provider.speak_ssml_async(ssml)._task
+
+if __name__ == '__main__':
+    SSML_text = '''<speak xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="http://www.w3.org/2001/mstts" xmlns:emo="http://www.w3.org/2009/10/emotionml" version="1.0" xml:lang="en-US">
+    <voice name="zh-CN-XiaoxiaoNeural">
+        wss的v1 接口目
+    </voice>
+</speak>'''
+    future = tts(SSML_text,"t.mp3")
+    asyncio.get_event_loop().get_loop(future.get_coro())

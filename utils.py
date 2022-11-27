@@ -1,3 +1,4 @@
+import asyncio
 from html import escape
 from os import listdir, mkdir, remove
 from os.path import isdir, isfile
@@ -7,8 +8,7 @@ from threading import Thread
 from time import sleep
 
 from alive_progress import alive_bar
-from azure.cognitiveservices.speech import SpeechSynthesisResult
-from azure.cognitiveservices.speech.speech import ResultFuture
+from mytts import (SpeechSynthesisResult, CancellationErrorCode)
 from requests import get
 from requests.exceptions import RequestException
 from requests.utils import quote  # type: ignore
@@ -225,6 +225,8 @@ class ToServer:
     def __init__(self, optDir):
         self.logger = getLogger("ToServer")
         self.optDir = optDir
+        self.finished:list[tuple[SpeechSynthesisResult,int]] = []
+        self.ups = False
         self.total_time = 0
         self.createdir()
         self.logger.debug(config.lang["utils"]["ToSer"]["init"])
@@ -233,29 +235,37 @@ class ToServer:
         if not isdir(self.optDir):
             mkdir(self.optDir)
 
-    def _callback(self, task: ResultFuture, j, retry, chapters, bar):
-        ret = task.get()
-        self._deal(ret, j, retry, chapters, bar)
+    def _callback(self, task: asyncio.Task):
+        # To make sure safety of list, it'll only save finished tasks in an array.
+        exc = task.exception()
+        if exc is None:
+            ret = task.result()
+        else:
+            ret = None
+        result = SpeechSynthesisResult(ret,exc)
+        id = int(task.get_name())
+        self.finished.append((result,id))
 
-    def callback(self, task, j, retry: set[Chapter], chapters, bar):
-        thr = Thread(target=self._callback, args=(
-            task, j, retry, chapters, bar))
-        thr.start()
-        return thr
+    # def callback(self, task, j, retry: set[Chapter], chapters, bar):
+    #     thr = Thread(target=self._callback, args=(
+    #         task, j, retry, chapters, bar))
+    #     thr.start()
+    #     return thr
 
     def _deal(self, ret: SpeechSynthesisResult, j, retry: set[Chapter], chapters, bar):
         logger = getLogger("callback")
         try:
             logger.debug(
                 "audio_duration="+str(ret.audio_duration))
-            self.total_time += ret.audio_duration.total_seconds()/60
             if ret.reason == consts.TTS_CANCEL:
+                assert ret.cancellation_details is not None
                 detail = ret.cancellation_details
                 logger.debug("Canceled")
                 logger.debug("idx=%d"%chapters[j].idx)
                 logger.debug("Detail: "+str(detail))
                 logger.debug("code: "+str(detail.error_code))
-                if detail.error_code==429:
+                if detail.error_code==CancellationErrorCode.TooManyRequests:
+                    self.ups = True
                     logger.error(config.lang["utils"]["ToSer"]["429"])
                     raise UPSLimittedError(detail.error_details)
             if ret.reason != consts.TTS_SUC:
@@ -265,9 +275,12 @@ class ToServer:
                 logger.debug(
                     "SSML Text: " + chapters[j].content)
                 raise RuntimeError("ret.reason=%s" % ret.reason)
-            if ret.audio_duration.total_seconds() == 0:
-                logger.error(config.lang["utils"]["ToSer"]["fail_not_429"])
-                raise RuntimeError("audio_duration=0")
+            else:
+                assert ret.audio_duration is not None
+                self.total_time += ret.audio_duration.total_seconds()/60
+                if ret.audio_duration.total_seconds() == 0:
+                    logger.error(config.lang["utils"]["ToSer"]["fail_not_429"])
+                    raise RuntimeError("audio_duration=0")
         except BaseException as e:
             ErrorHandler(e, "AsyncReq", logger)()
             retry.add(chapters[j])
@@ -279,28 +292,27 @@ class ToServer:
         bar()
 
     def asyncDownload(self, chapters: list[Chapter], max_task: int = config.MAX_TASK):
-        pool: list[Thread] = []
         retry: set[Chapter] = set()
         self.retry_len = 0
         self.total_len = 0
         stop_cnt=0
         with alive_bar(len(chapters),bar="circles",dual_line=True) as bar:
             bar.title = "%02d task for one time" % max_task
+            task_cnt = 0
             for i, chap in enumerate(chapters):
                 opt = self.optDir+'/'+chap.title
                 task = tts(chap.content, opt)
+                task.set_name(i)
+                task.add_done_callback(self._callback)
                 self.logger.debug(f"Create task {task}")
-                pool.append(self.callback(task, i, retry, chapters, bar))
-                if len(pool) < max_task: continue
+                task_cnt += 1
                 self.logger.info("Start waiting.")
-                while len(pool) >= max_task:
+                while task_cnt >= max_task:
                     sleep(2)
-                    tmp = []
-                    for thr in pool:
-                        if thr.is_alive():
-                            tmp.append(thr)
-                    pool = tmp.copy()
-                    # This should be like `ptr.png`
+                    for rst,j in self.finished:
+                        self._deal(rst,j,retry,chapters,bar)
+                        task_cnt -= 1
+                    self.finished.clear()
 
                     total = bar.current()+1
                     persent = -1
@@ -308,18 +320,19 @@ class ToServer:
                         persent = 1
                     else:
                         persent = 1-((len(retry)-self.retry_len)/(total-self.total_len))
-                        if total-self.total_len<config.FAIL_429:
-                            persent = 1
-                        self.logger.debug("total=%02d       total_len=%02d"%(total,self.total_len))
-                        self.logger.debug("len(retry)=%02d  retry_len=%02d"%(len(retry),self.retry_len))
-                        self.retry_len, self.total_len = len(retry), total
                     self.logger.debug("persent= %f"%persent)
-                    if persent < config.LIMIT_429:
+                    
+                    if self.ups:
+                        self.ups = False
                         stop_cnt+=1
                         self.logger.error("429 UPS Limitted.")
                         self.logger.info("Waiting for all runnning jobs...")
-                        for thr in pool:
-                            thr.join()
+                        while task_cnt > 0:
+                            sleep(2)
+                            for rst,j in self.finished:
+                                self._deal(rst,j,retry,chapters,bar)
+                                task_cnt -= 1
+                            self.finished.clear()
                         t = 9+3*stop_cnt
                         if t>config.MAX_WAIT:
                             t=15
@@ -329,8 +342,12 @@ class ToServer:
                 self.logger.info("End waiting.")
             # ----------------------------------------------
             self.logger.info("Start last async waiting.")
-            for thr in pool:
-                thr.join()
+            while task_cnt > 0:
+                sleep(2)
+                for rst,j in self.finished:
+                    self._deal(rst,j,retry,chapters,bar)
+                    task_cnt -= 1
+                self.finished.clear()
             self.logger.info("End async waiting.")
             # ----------------------------------------------
         return retry
