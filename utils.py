@@ -4,7 +4,6 @@ from os import listdir, mkdir, remove
 from os.path import isdir, isfile
 from re import match, search, sub
 from subprocess import PIPE, run
-from threading import Thread
 from time import sleep
 
 from alive_progress import alive_bar
@@ -236,7 +235,9 @@ class ToServer:
             mkdir(self.optDir)
 
     def _callback(self, task: asyncio.Task):
-        # To make sure safety of list, it'll only save finished tasks in an array.
+        # To make sure safety of thread, it'll only save finished tasks in an array.
+        # Some functions is not recommanded to use due to they are inside functions in `mytts`
+        # I use these because `get` method called in thread has some bugs when build this.
         exc = task.exception()
         if exc is None:
             ret = task.result()
@@ -245,12 +246,6 @@ class ToServer:
         result = SpeechSynthesisResult(ret,exc)
         id = int(task.get_name())
         self.finished.append((result,id))
-
-    # def callback(self, task, j, retry: set[Chapter], chapters, bar):
-    #     thr = Thread(target=self._callback, args=(
-    #         task, j, retry, chapters, bar))
-    #     thr.start()
-    #     return thr
 
     def _deal(self, ret: SpeechSynthesisResult, j, retry: set[Chapter], chapters, bar):
         logger = getLogger("callback")
