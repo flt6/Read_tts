@@ -21,11 +21,10 @@ Choose running mode:
 '''
 
 CHOOSEBOOK = '''
-No.     %02d
-name:   %s
-author: %s
-now:    %s
------------------
+[b bright_red]No.     %02d[/b bright_red]
+[orange1]name:   %s[/orange1]
+[chartreuse3]author: %s[/chartreuse3]
+[bright_cyan]now:    %s[/bright_cyan]
 '''
 
 

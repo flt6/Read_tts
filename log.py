@@ -2,6 +2,7 @@ from logging import (CRITICAL, DEBUG, ERROR, INFO, WARNING, FileHandler,
                      Formatter, Logger)
 from os import mkdir, path
 from traceback import format_exc
+from rich.logging import RichHandler
 
 import config
 
@@ -24,26 +25,26 @@ class Log(Logger):
 
     def debug(self, text, *args, exc_info=None, **kwargs):
         if self.isEnabledFor(DEBUG):
-            if self.show:
-                print(self._fmt(f"DEBUG: {str(text)}", DEBUG))
+            # if self.show:
+                # print(self._fmt(f"DEBUG: {str(text)}", DEBUG))
             self._log(DEBUG, text, args, exc_info=exc_info, **kwargs)
 
     def info(self, text, *args, exc_info=None, **kwargs):
         if self.isEnabledFor(INFO):
-            if self.show:
-                print(self._fmt(f"INFO: {str(text)}", INFO))
+            # if self.show:
+                # print(self._fmt(f"INFO: {str(text)}", INFO))
             self._log(INFO, text, args, exc_info=exc_info, **kwargs)
 
     def warning(self, text, *args, exc_info=None, **kwargs):
         if self.isEnabledFor(WARNING):
-            if self.show:
-                print(self._fmt(f"WARNING: {str(text)}", WARNING))
+            # if self.show:
+                # print(self._fmt(f"WARNING: {str(text)}", WARNING))
             self._log(WARNING, text, args, exc_info=exc_info, **kwargs)
 
     def error(self, text, *args, exc_info=None, **kwargs):
         if self.isEnabledFor(ERROR):
-            if self.show:
-                print(self._fmt(f"ERROR: {str(text)}", ERROR))
+            # if self.show:
+                # print(self._fmt(f"ERROR: {str(text)}", ERROR))
             self._log(ERROR, text, args, exc_info=exc_info, **kwargs)
 
     def exception(self, text, *args, exc_info=True, **kwargs):
@@ -51,8 +52,8 @@ class Log(Logger):
 
     def critical(self, text, *args, exc_info=None, **kwargs):
         if self.isEnabledFor(CRITICAL):
-            if self.show:
-                print(self._fmt(f"CRITICAL: {str(text)}", CRITICAL))
+            # if self.show:
+                # print(self._fmt(f"CRITICAL: {str(text)}", CRITICAL))
             self._log(CRITICAL, text, args,
                       exc_info=exc_info, **kwargs)
 
@@ -62,19 +63,19 @@ class Log(Logger):
         for line in msg.splitlines():
             super()._log(level, line, args, None, extra, stack_info, stacklevel)
         if exc_info:
-            print(self._fmt(format_exc(), level))
+            # print(self._fmt(format_exc(), level))
             for line in format_exc().splitlines():
                 super()._log(ERROR, line, args, None, extra, stack_info, stacklevel)
 
-    def _fmt(self, text, level):
-        d = {
-            DEBUG:    "\033[1;37m",
-            INFO:     "\033[1;34m",
-            WARNING:  "\033[1;32m",
-            ERROR:    "\033[1;31m",
-            CRITICAL: "\033[1;41m"
-        }
-        return d[level]+text+"\033[0m"
+    # def _fmt(self, text, level):
+    #     d = {
+    #         DEBUG:    "\033[1;37m",
+    #         INFO:     "\033[1;34m",
+    #         WARNING:  "\033[1;32m",
+    #         ERROR:    "\033[1;31m",
+    #         CRITICAL: "\033[1;41m"
+    #     }
+    #     return d[level]+text+"\033[0m"
 
     def gen_handle(self) -> None:
         fmt = Formatter(
@@ -96,6 +97,8 @@ class Log(Logger):
         self.addHandler(self.error_handle)
         if self.isdebug:
             self.addHandler(self.debug_handle)
+        if self.show:
+            self.addHandler(RichHandler(rich_tracebacks=True,locals_max_string=50))
 
     def get_logger(self):
         return self
@@ -107,3 +110,16 @@ def getLogger(name: str = "Default") -> Log:
         show=config.TO_CONSOLE,
         debug=config.DEBUG,
     ).get_logger()
+
+def test():
+    log = getLogger("test")
+    log.debug("1"*20)
+    log.info("2"*50)
+    try:
+        1/0
+    except:
+        log.exception("5"*50)
+    log.critical("23q"*80)
+
+if __name__ == "__main__":
+    test()

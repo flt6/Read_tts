@@ -18,6 +18,10 @@ from exceptions import AppError, ErrorHandler, ServerError, UPSLimittedError
 from log import Log, getLogger
 from model import Book, Chapter, ChapterList
 from tts import tts
+from rich.columns import Columns
+from rich.panel import Panel
+from rich.progress import Progress
+from rich import print
 
 
 def req(param, caller="Requester", logger=None,
@@ -68,6 +72,7 @@ class ToApp:
         shelf: dict = req((url, [self.ip]), 'ToApp',
                           level=2, exit=True, wait=True)  # type: ignore
         books = []
+        t = []
         for i in range(len(shelf)):
             book = Book(**shelf[i])
             if not book.available:
@@ -82,8 +87,15 @@ class ToApp:
                 book.author,
                 book.idx
             )
-            print(tip)
+            # branch = tree.add(str(i+1))
+            # branch.add(book.name)
+            # branch.add(book.author)
+            # branch.add(str(book.idx))
+            t.append(Panel(tip,expand=True))
+            # t.append(Table(tip,expand=True))
+            # print(tip)
             books.append(book)
+        print(Columns(t, equal=True))
         return books
 
     def choose_book(self, books: list[Book]):
@@ -117,11 +129,12 @@ class ToApp:
     def download_content(self, chapters: list[ChapterList]):
         retry = []
         con = []
-        with alive_bar(len(chapters)) as bar:
+        with Progress() as pro:
+            task = pro.add_task("Download chapters",total=len(chapters))
             for ch in chapters:
                 url = consts.GET_CONTENT
                 res = req((url, [self.ip, ch.url, ch.idx]), "ToApp")
-                bar()
+                pro.update(task,advance=1)
                 if res is None:
                     retry.append(ch)
                     continue
@@ -247,7 +260,7 @@ class ToServer:
         id = int(task.get_name())
         self.finished.append((result,id))
 
-    def _deal(self, ret: SpeechSynthesisResult, j, retry: set[Chapter], chapters, bar):
+    def _deal(self, ret: SpeechSynthesisResult, j, retry: set[Chapter], chapters):
         logger = getLogger("callback")
         try:
             logger.debug(
@@ -279,20 +292,18 @@ class ToServer:
         except BaseException as e:
             ErrorHandler(e, "AsyncReq", logger)()
             retry.add(chapters[j])
-        retry_len = len(retry)
-        total = 1 if bar.current() == 0 else bar.current()+1
-        persent = 1-(retry_len/total)
-        bar.text = config.lang["utils"]["ToSer"]["retry_pro"] % (
-            retry_len, persent*100)
-        bar()
+            return False
+        return True
+        
 
     def asyncDownload(self, chapters: list[Chapter], max_task: int = config.MAX_TASK):
         retry: set[Chapter] = set()
         self.retry_len = 0
         self.total_len = 0
         stop_cnt=0
-        with alive_bar(len(chapters),bar="circles",dual_line=True) as bar:
-            bar.title = "%02d task for one time" % max_task
+        with Progress() as pro:
+            pro_task = pro.add_task("TTS",total=len(chapters))
+            pro.update(pro_task,description="%02d task for one time" % max_task)
             task_cnt = 0
             for i, chap in enumerate(chapters):
                 opt = self.optDir+'/'+chap.title
@@ -305,17 +316,11 @@ class ToServer:
                 while task_cnt >= max_task:
                     sleep(2)
                     for rst,j in self.finished:
-                        self._deal(rst,j,retry,chapters,bar)
+                        self._deal(rst,j,retry,chapters)
+                        pro.update(pro_task,advance=1)
                         task_cnt -= 1
                     self.finished.clear()
 
-                    total = bar.current()+1
-                    persent = -1
-                    if total-self.total_len == 0:
-                        persent = 1
-                    else:
-                        persent = 1-((len(retry)-self.retry_len)/(total-self.total_len))
-                    self.logger.debug("persent= %f"%persent)
                     
                     if self.ups:
                         self.ups = False
@@ -325,7 +330,7 @@ class ToServer:
                         while task_cnt > 0:
                             sleep(2)
                             for rst,j in self.finished:
-                                self._deal(rst,j,retry,chapters,bar)
+                                self._deal(rst,j,retry,chapters,pro,task)
                                 task_cnt -= 1
                             self.finished.clear()
                         t = 9+3*stop_cnt
@@ -340,7 +345,8 @@ class ToServer:
             while task_cnt > 0:
                 sleep(2)
                 for rst,j in self.finished:
-                    self._deal(rst,j,retry,chapters,bar)
+                    self._deal(rst,j,retry,chapters)
+                    pro.update(pro_task,advance=1)
                     task_cnt -= 1
                 self.finished.clear()
             self.logger.info("End async waiting.")
