@@ -1,4 +1,5 @@
 from typing import Optional
+
 import rich.repr
 
 
@@ -16,22 +17,35 @@ class Book:
     tot: int
 
     def __init__(
-            self, author: Optional[str] = None, bookUrl: Optional[str] = None,
-            durChapterIndex: Optional[int] = None, durChapterTitle: Optional[str] = None,
-            name: Optional[str] = None, totalChapterNum: Optional[int] = None, **kwargs) -> None:
+        self,
+        author: Optional[str] = None,
+        bookUrl: Optional[str] = None,
+        durChapterIndex: Optional[int] = None,
+        durChapterTitle: Optional[str] = None,
+        name: Optional[str] = None,
+        totalChapterNum: Optional[int] = None,
+        **kwargs
+    ) -> None:
 
-        if None in [author, bookUrl, durChapterIndex, durChapterTitle, name, totalChapterNum]:
+        if None in [
+            author,
+            bookUrl,
+            durChapterIndex,
+            durChapterTitle,
+            name,
+            totalChapterNum,
+        ]:
             self.available = False
             return
         else:
             self.available = True
-            self.name = name           # type: ignore
-            self.author = author       # type: ignore
+            self.name = name  # type: ignore
+            self.author = author  # type: ignore
 
             self.title = durChapterTitle  # type: ignore
-            self.idx = durChapterIndex   # type: ignore
-            self.tot = totalChapterNum   # type: ignore
-            self.url = bookUrl           # type: ignore
+            self.idx = durChapterIndex  # type: ignore
+            self.tot = totalChapterNum  # type: ignore
+            self.url = bookUrl  # type: ignore
 
             self.dict = kwargs
 
@@ -39,13 +53,13 @@ class Book:
 class ChapterList:
 
     idx: int
-    '章节数'
+    "章节数"
     title: str
-    '标题'
+    "标题"
     url: str
-    '章节链接'
+    "章节链接"
 
-    def __init__(self,  index: int, title: str, book: str, **kwargs) -> None:
+    def __init__(self, index: int, title: str, book: str, **kwargs) -> None:
         self.idx = index
         self.title = title
         self.url = book
@@ -54,13 +68,15 @@ class ChapterList:
 
 class Chapter:
     idx: int
-    '章节数'
+    "章节数"
     title: str
-    '标题'
+    "标题"
     content: str
-    '内容'
+    "内容"
 
-    def __init__(self,  index: int, title: str, content: str, spl: int = -1, **kwargs) -> None:
+    def __init__(
+        self, index: int, title: str, content: str, spl: int = -1, **kwargs
+    ) -> None:
         self.idx = index
         self.title = title
         self.content = content
@@ -68,7 +84,9 @@ class Chapter:
         self.dict = kwargs
 
     def __repr__(self):
-        return "<Chapter idx={} title={} content={}>".format(self.idx, self.title, self.content.strip()[:5])
+        return "<Chapter idx={} title={} content={}>".format(
+            self.idx, self.title, self.content.strip()[:5]
+        )
 
     def __rich_repr__(self) -> rich.repr.Result:
         yield self.idx

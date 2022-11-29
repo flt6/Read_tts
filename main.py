@@ -3,8 +3,7 @@ from sys import exit
 from time import sleep, time
 from traceback import format_exc
 
-from config import MAX_RETRY, MAX_TASK, OPT_DIR, RETRY_SUB, WAIT_TIME
-from config import check,lang
+from config import MAX_RETRY, MAX_TASK, OPT_DIR, RETRY_SUB, WAIT_TIME, check, lang
 from consts import MODE_CHOOSE
 from exceptions import ErrorHandler
 from log import getLogger
@@ -90,18 +89,18 @@ class Main:
         while len(retry):
             logger.info(lang["main"]["retry_st"])
             sleep(WAIT_TIME)
-            max_task//=RETRY_SUB
-            if max_task < 1: 
+            max_task //= RETRY_SUB
+            if max_task < 1:
                 max_task = 1
             logger.info(lang["main"]["retry_st"])
-            retry = self.ser.asyncDownload(list(retry),int(max_task))
+            retry = self.ser.asyncDownload(list(retry), int(max_task))
             cnt += 1
             if cnt > MAX_RETRY and len(retry) > 0:
                 logger.error(lang["main"]["fail1"])
                 logger.error(lang["main"]["fail2"])
                 logger.error(retry)
                 for chap in retry:
-                    copy("fail.mp3", self.optDir+'/'+chap.title)
+                    copy("fail.mp3", self.optDir + "/" + chap.title)
                 return retry
         logger.info(lang["main"]["tts_end"])
 
@@ -118,12 +117,13 @@ class Main:
         self.merge(chaps)
         if retry is not None:
             retry = set(retry)
-            logger.info(lang["main"]["all_failed"] +
-                  " ".join([str(i.idx) for i in retry]))
-            k = len(retry)/len(chaps)
+            logger.info(
+                lang["main"]["all_failed"] + " ".join([str(i.idx) for i in retry])
+            )
+            k = len(retry) / len(chaps)
             if k > 0.7:
                 logger.info(lang["main"]["too_many_failed_1"])
-                logger.info(lang["main"]["too_many_failed_2"]%k*100)
+                logger.info(lang["main"]["too_many_failed_2"] % k * 100)
                 logger.info(lang["main"]["too_many_failed_3"])
         redelete()
         return len(chaps)
@@ -139,10 +139,10 @@ def main(typ: int):
             logger.info("No chapter requested.")
             exit()
         end = time()
-        t = time_fmt(end-bgn)
-        logger.info(lang["main"]["end_1"]+t)
-        logger.info(lang["main"]["end_2"] % ((end-bgn)/length))
-        logger.info(lang["main"]["end_3"]%(main.ser.total_time/(end-bgn)))
+        t = time_fmt(end - bgn)
+        logger.info(lang["main"]["end_1"] + t)
+        logger.info(lang["main"]["end_2"] % ((end - bgn) / length))
+        logger.info(lang["main"]["end_3"] % (main.ser.total_time / (end - bgn)))
 
     except SystemExit as e:
         logger.info(f"SystemExit with code {e.code} got, may exit not normally.")
@@ -156,6 +156,6 @@ def main(typ: int):
         ErrorHandler(e, "UNCAUGHT", logger, 3, True, True)()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main(1)
     input("Press enter to exit.")

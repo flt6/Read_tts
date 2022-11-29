@@ -6,11 +6,14 @@ from re import match, search, sub
 from subprocess import PIPE, run
 from time import sleep
 
-from alive_progress import alive_bar
-from mytts import (SpeechSynthesisResult, CancellationErrorCode)
+from mytts import CancellationErrorCode, SpeechSynthesisResult
 from requests import get
 from requests.exceptions import RequestException
 from requests.utils import quote  # type: ignore
+from rich import print
+from rich.columns import Columns
+from rich.panel import Panel
+from rich.progress import Progress
 
 import config
 import consts
@@ -18,14 +21,9 @@ from exceptions import AppError, ErrorHandler, ServerError, UPSLimittedError
 from log import Log, getLogger
 from model import Book, Chapter, ChapterList
 from tts import tts
-from rich.columns import Columns
-from rich.panel import Panel
-from rich.progress import Progress
-from rich import print
 
 
-def req(param, caller="Requester", logger=None,
-        level=1, exit=False, wait=False):
+def req(param, caller="Requester", logger=None, level=1, exit=False, wait=False):
     try:
         url, args = param
         url = url.format(args[0], *[quote(str(i)) for i in args[1:]])
@@ -38,7 +36,7 @@ def req(param, caller="Requester", logger=None,
         return None
     try:
         json = res.json()
-        if json["isSuccess"] == False:
+        if not json["isSuccess"]:
             raise AppError(json["errorMsg"])  # type: ignore
         json = json["data"]
     except Exception as e:
@@ -64,13 +62,14 @@ class ToApp:
         self.saveIP()
 
     def get_shelf(self):
-        '''
-            Get the shelf infomation from the app.
-            @return: Is succeeded.
-        '''
+        """
+        Get the shelf infomation from the app.
+        @return: Is succeeded.
+        """
         url = consts.GET_SHELF
-        shelf: dict = req((url, [self.ip]), 'ToApp',
-                          level=2, exit=True, wait=True)  # type: ignore
+        shelf: dict = req(
+            (url, [self.ip]), "ToApp", level=2, exit=True, wait=True
+        )  # type: ignore
         books = []
         t = []
         for i in range(len(shelf)):
@@ -81,17 +80,12 @@ class ToApp:
             if book.idx == 0:
                 self.logger.debug(config.lang["utils"]["ToApp"]["no_chap"])
                 # continue
-            tip = consts.CHOOSEBOOK % (
-                i+1,
-                book.name,
-                book.author,
-                book.idx
-            )
+            tip = consts.CHOOSEBOOK % (i + 1, book.name, book.author, book.idx)
             # branch = tree.add(str(i+1))
             # branch.add(book.name)
             # branch.add(book.author)
             # branch.add(str(book.idx))
-            t.append(Panel(tip,expand=True))
+            t.append(Panel(tip, expand=True))
             # t.append(Table(tip,expand=True))
             # print(tip)
             books.append(book)
@@ -99,18 +93,13 @@ class ToApp:
         return books
 
     def choose_book(self, books: list[Book]):
-        num = int(input("No. "))-1
+        num = int(input("No. ")) - 1
         book = books[num]
         return book
 
     def choose_area(self, book: Book):
-        bgn = input(
-            "From(%d: %s): " % (
-                book.idx,
-                book.title
-            )
-        )
-        bgn = book.idx if bgn == '' else int(bgn)
+        bgn = input("From(%d: %s): " % (book.idx, book.title))
+        bgn = book.idx if bgn == "" else int(bgn)
         to = int(input("To. "))
         return range(bgn, to)
 
@@ -120,8 +109,9 @@ class ToApp:
 
     def get_charpter_list(self, book: Book):
         url = consts.GET_CHAPTER_LIST
-        chapters = req((url, [self.ip, book.url]),
-                       "ToApp", level=2, exit=True, wait=True)
+        chapters = req(
+            (url, [self.ip, book.url]), "ToApp", level=2, exit=True, wait=True
+        )
         if chapters is None:
             return
         return [ChapterList(**item, book=book.url) for item in chapters]
@@ -130,11 +120,11 @@ class ToApp:
         retry = []
         con = []
         with Progress() as pro:
-            task = pro.add_task("Download chapters",total=len(chapters))
+            task = pro.add_task("Download chapters", total=len(chapters))
             for ch in chapters:
                 url = consts.GET_CONTENT
                 res = req((url, [self.ip, ch.url, ch.idx]), "ToApp")
-                pro.update(task,advance=1)
+                pro.update(task, advance=1)
                 if res is None:
                     retry.append(ch)
                     continue
@@ -147,7 +137,9 @@ class ToApp:
             return False
         try:
             res = get(consts.GET_SHELF.format(ip), timeout=config.TIMEOUT)
-            self.logger.debug(config.lang["utils"]["ToApp"]["http_dbg"] % res.status_code)
+            self.logger.debug(
+                config.lang["utils"]["ToApp"]["http_dbg"] % res.status_code
+            )
             if res.status_code != 200:
                 raise ServerError(res.status_code)  # type: ignore
             return True
@@ -203,7 +195,7 @@ class Trans:
 
     def content_basic(self, chap: Chapter):
         con = chap.content
-        con = chap.title+"\n"+con
+        con = chap.title + "\n" + con
         lines = con.splitlines()
         totLines = len(lines)
         content = []
@@ -219,8 +211,8 @@ class Trans:
         return content
 
     def title(self, chap: Chapter):
-        title = sub(r'''[\*\/\\\|\<\>\? \:\.\'\"\!]''', "", chap.title)
-        title = "%03d" % chap.idx+"_"+title
+        title = sub(r"""[\*\/\\\|\<\>\? \:\.\'\"\!]""", "", chap.title)
+        title = "%03d" % chap.idx + "_" + title
         return title
 
     def __call__(self, chap: Chapter):
@@ -229,7 +221,7 @@ class Trans:
             title = self.title(chap)
             content = self.content_basic(chap)
             for i, t in enumerate(content):
-                opt.append(Chapter(chap.idx, title+f" ({i}).mp3", t))
+                opt.append(Chapter(chap.idx, title + f" ({i}).mp3", t))
             return opt
 
 
@@ -237,7 +229,7 @@ class ToServer:
     def __init__(self, optDir):
         self.logger = getLogger("ToServer")
         self.optDir = optDir
-        self.finished:list[tuple[SpeechSynthesisResult,int]] = []
+        self.finished: list[tuple[SpeechSynthesisResult, int]] = []
         self.ups = False
         self.total_time = 0
         self.createdir()
@@ -256,36 +248,34 @@ class ToServer:
             ret = task.result()
         else:
             ret = None
-        result = SpeechSynthesisResult(ret,exc)
+        result = SpeechSynthesisResult(ret, exc)
         id = int(task.get_name())
-        self.finished.append((result,id))
+        self.finished.append((result, id))
 
     def _deal(self, ret: SpeechSynthesisResult, j, retry: set[Chapter], chapters):
         logger = getLogger("callback")
         try:
-            logger.debug(
-                "audio_duration="+str(ret.audio_duration))
+            logger.debug("audio_duration=" + str(ret.audio_duration))
             if ret.reason == consts.TTS_CANCEL:
                 assert ret.cancellation_details is not None
                 detail = ret.cancellation_details
                 logger.debug("Canceled")
-                logger.debug("idx=%d"%chapters[j].idx)
-                logger.debug("Detail: "+str(detail))
-                logger.debug("code: "+str(detail.error_code))
-                if detail.error_code==CancellationErrorCode.TooManyRequests:
+                logger.debug("idx=%d" % chapters[j].idx)
+                logger.debug("Detail: " + str(detail))
+                logger.debug("code: " + str(detail.error_code))
+                if detail.error_code == CancellationErrorCode.TooManyRequests:
                     self.ups = True
                     logger.error(config.lang["utils"]["ToSer"]["429"])
                     raise UPSLimittedError(detail.error_details)
             if ret.reason != consts.TTS_SUC:
                 logger.debug("Error")
-                logger.error(config.lang["utils"]["ToSer"]["fail"]+str(ret.reason))
-                logger.debug("idx=%d"%chapters[j].idx)
-                logger.debug(
-                    "SSML Text: " + chapters[j].content)
+                logger.error(config.lang["utils"]["ToSer"]["fail"] + str(ret.reason))
+                logger.debug("idx=%d" % chapters[j].idx)
+                logger.debug("SSML Text: " + chapters[j].content)
                 raise RuntimeError("ret.reason=%s" % ret.reason)
             else:
                 assert ret.audio_duration is not None
-                self.total_time += ret.audio_duration.total_seconds()/60
+                self.total_time += ret.audio_duration.total_seconds() / 60
                 if ret.audio_duration.total_seconds() == 0:
                     logger.error(config.lang["utils"]["ToSer"]["fail_not_429"])
                     raise RuntimeError("audio_duration=0")
@@ -294,19 +284,18 @@ class ToServer:
             retry.add(chapters[j])
             return False
         return True
-        
 
     def asyncDownload(self, chapters: list[Chapter], max_task: int = config.MAX_TASK):
         retry: set[Chapter] = set()
         self.retry_len = 0
         self.total_len = 0
-        stop_cnt=0
+        stop_cnt = 0
         with Progress() as pro:
-            pro_task = pro.add_task("TTS",total=len(chapters))
-            pro.update(pro_task,description="%02d task for one time" % max_task)
+            pro_task = pro.add_task("TTS", total=len(chapters))
+            pro.update(pro_task, description="%02d task for one time" % max_task)
             task_cnt = 0
             for i, chap in enumerate(chapters):
-                opt = self.optDir+'/'+chap.title
+                opt = self.optDir + "/" + chap.title
                 task = tts(chap.content, opt)
                 task.set_name(i)
                 task.add_done_callback(self._callback)
@@ -315,28 +304,27 @@ class ToServer:
                 self.logger.info("Start waiting.")
                 while task_cnt >= max_task:
                     sleep(2)
-                    for rst,j in self.finished:
-                        self._deal(rst,j,retry,chapters)
-                        pro.update(pro_task,advance=1)
+                    for rst, j in self.finished:
+                        self._deal(rst, j, retry, chapters)
+                        pro.update(pro_task, advance=1)
                         task_cnt -= 1
                     self.finished.clear()
 
-                    
                     if self.ups:
                         self.ups = False
-                        stop_cnt+=1
+                        stop_cnt += 1
                         self.logger.error("429 UPS Limitted.")
                         self.logger.info("Waiting for all runnning jobs...")
                         while task_cnt > 0:
                             sleep(2)
-                            for rst,j in self.finished:
-                                self._deal(rst,j,retry,chapters,pro,task)
+                            for rst, j in self.finished:
+                                self._deal(rst, j, retry, chapters)
                                 task_cnt -= 1
                             self.finished.clear()
-                        t = 9+3*stop_cnt
-                        if t>config.MAX_WAIT:
-                            t=15
-                        self.logger.info("Sleep for %02d seconds..."%t)
+                        t = 9 + 3 * stop_cnt
+                        if t > config.MAX_WAIT:
+                            t = 15
+                        self.logger.info("Sleep for %02d seconds..." % t)
                         sleep(t)
                         self.logger.info("UPS error wait end")
                 self.logger.info("End waiting.")
@@ -344,9 +332,9 @@ class ToServer:
             self.logger.info("Start last async waiting.")
             while task_cnt > 0:
                 sleep(2)
-                for rst,j in self.finished:
-                    self._deal(rst,j,retry,chapters)
-                    pro.update(pro_task,advance=1)
+                for rst, j in self.finished:
+                    self._deal(rst, j, retry, chapters)
+                    pro.update(pro_task, advance=1)
                     task_cnt -= 1
                 self.finished.clear()
             self.logger.info("End async waiting.")
@@ -356,23 +344,22 @@ class ToServer:
 
 def _merge(dir: str, logger: Log, ch: list[Chapter], name: str, is_remove: bool):
     logger.debug(f"Start merging '{name}'")
-    paths = [dir+"/"+i.title for i in ch]
+    paths = [dir + "/" + i.title for i in ch]
     cmd = [
-        'ffmpeg',
-        '-hide_banner',
-        '-i',
+        "ffmpeg",
+        "-hide_banner",
+        "-i",
         f'concat:{"|".join(paths)}',
-        '-c',
-        'copy',
-        '-y',
-        dir+"/"+name.replace(" (0).mp3", ".mp3")
+        "-c",
+        "copy",
+        "-y",
+        dir + "/" + name.replace(" (0).mp3", ".mp3"),
     ]
     try:
         ret = run(cmd, stderr=PIPE)
         if ret.returncode != 0:
             logger.error(ret.stderr.decode("utf-8"))
-            logger.error("Error occurred while merging. code=%d" %
-                         ret.returncode)
+            logger.error("Error occurred while merging. code=%d" % ret.returncode)
         else:
             logger.debug(ret.stderr.decode("utf-8"))
             if is_remove:
@@ -386,16 +373,16 @@ def _merge(dir: str, logger: Log, ch: list[Chapter], name: str, is_remove: bool)
 
 
 def _concat(tmp: list[str], name: str):
-    paths = [config.OPT_DIR+"/"+i for i in tmp]
+    paths = [config.OPT_DIR + "/" + i for i in tmp]
     cmd = [
-        'ffmpeg',
-        '-hide_banner',
-        '-i',
+        "ffmpeg",
+        "-hide_banner",
+        "-i",
         f'concat:{"|".join(paths)}',
-        '-c',
-        'copy',
-        '-y',
-        config.OPT_DIR+"/"+name
+        "-c",
+        "copy",
+        "-y",
+        config.OPT_DIR + "/" + name,
     ]
     if paths != []:
         print(cmd)
@@ -405,10 +392,10 @@ def _concat(tmp: list[str], name: str):
 
 
 def reConcat():
-    l = listdir(config.OPT_DIR)
+    files = listdir(config.OPT_DIR)
     name = ""
     tmp: list[str] = []
-    for file in l:
+    for file in files:
         if " (0).mp3" in file:
             _concat(tmp, name)
             tmp = []
@@ -440,8 +427,8 @@ def merge(chapters: list[Chapter], dir: str, is_remove=True):
 
 def time_fmt(time: float):
     time = int(time)
-    hour = time//3600
-    min = time//60
+    hour = time // 3600
+    min = time // 60
     sec = time % 60
     return "%02d:%02d:%02d" % (hour, min, sec)
 
@@ -451,7 +438,7 @@ def redelete():
         l = listdir(config.OPT_DIR)
         for i in l:
             if search(r"\s\(\d+\)\.mp3$", i) is not None:
-                path = config.OPT_DIR+"/"+i
+                path = config.OPT_DIR + "/" + i
                 if isfile(path):
                     remove(path)
     except Exception as e:

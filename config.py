@@ -4,20 +4,21 @@ from typing import Any, Union
 
 from consts import DEFAULT_CONFIG, DEFAULT_TYPE
 
-MAX_RETRY : int
-MAX_TASK  : int
-MAX_CHAR  : int
-WAIT_TIME : Union[int,float]
-RETRY_SUB : Union[int,float]
-LIMIT_429 : int
-MAX_WAIT  : int
-FAIL_429  : int
-TIMEOUT   : Union[int,float]
-OPT_DIR   : str
-DEBUG     : bool
+MAX_RETRY: int
+MAX_TASK: int
+MAX_CHAR: int
+WAIT_TIME: Union[int, float]
+RETRY_SUB: Union[int, float]
+LIMIT_429: int
+MAX_WAIT: int
+FAIL_429: int
+TIMEOUT: Union[int, float]
+OPT_DIR: str
+DEBUG: bool
 TO_CONSOLE: bool
-LANG_FILE : str
-lang      : dict[str,dict]
+LANG_FILE: str
+lang: dict[str, dict]
+
 
 def load():
     config = DEFAULT_CONFIG.copy()
@@ -33,7 +34,7 @@ def check():
     if not exists("config.json"):
         print("config.json is not found. Auto created.")
         with open("config.json", "w", encoding="utf-8") as f:
-            json.dump(DEFAULT_CONFIG,f)
+            json.dump(DEFAULT_CONFIG, f)
     with open("config.json", "r", encoding="utf-8") as f:
         d: dict[str, Any] = json.load(f)
     suc = True
@@ -49,15 +50,16 @@ def check():
 
 def load_lang() -> dict:
     try:
-        with open(LANG_FILE,"r",encoding="utf-8") as f:
+        with open(LANG_FILE, "r", encoding="utf-8") as f:
             lang = json.load(f)
-            return {"lang":lang}
+            return {"lang": lang}
     except FileNotFoundError:
         print("File `lang.json` not found!")
         exit(-1)
     except json.JSONDecodeError:
         print("`lang.json` is invalid!")
         exit(-1)
+
 
 if __name__ == "__main__":
     check()
