@@ -41,7 +41,7 @@ DEFAULT_CONFIG = {
     "OPT_DIR": "Output",
     "DEBUG": False,
     "TO_CONSOLE": True,
-    "LANG_FILE": "lang_en.json",
+    "LANG_FILE": "lang_zh.json",
 }
 
 DEFAULT_TYPE = {
