@@ -32,57 +32,57 @@ class Log(Logger):
         self.gen_handle()
         self.register_handles()
 
-    def debug(self, text, *args, exc_info=None, **kwargs):
-        if self.isEnabledFor(DEBUG):
-            # if self.show:
-            # print(self._fmt(f"DEBUG: {str(text)}", DEBUG))
-            self._log(DEBUG, text, args, exc_info=exc_info, **kwargs)
+    # def debug(self, text, *args, exc_info=None, **kwargs):
+    #     if self.isEnabledFor(DEBUG):
+    #         # if self.show:
+    #         # print(self._fmt(f"DEBUG: {str(text)}", DEBUG))
+    #         self._log(DEBUG, text, args, exc_info=exc_info, **kwargs)
 
-    def info(self, text, *args, exc_info=None, **kwargs):
-        if self.isEnabledFor(INFO):
-            # if self.show:
-            # print(self._fmt(f"INFO: {str(text)}", INFO))
-            self._log(INFO, text, args, exc_info=exc_info, **kwargs)
+    # def info(self, text, *args, exc_info=None, **kwargs):
+    #     if self.isEnabledFor(INFO):
+    #         # if self.show:
+    #         # print(self._fmt(f"INFO: {str(text)}", INFO))
+    #         self._log(INFO, text, args, exc_info=exc_info, **kwargs)
 
-    def warning(self, text, *args, exc_info=None, **kwargs):
-        if self.isEnabledFor(WARNING):
-            # if self.show:
-            # print(self._fmt(f"WARNING: {str(text)}", WARNING))
-            self._log(WARNING, text, args, exc_info=exc_info, **kwargs)
+    # def warning(self, text, *args, exc_info=None, **kwargs):
+    #     if self.isEnabledFor(WARNING):
+    #         # if self.show:
+    #         # print(self._fmt(f"WARNING: {str(text)}", WARNING))
+    #         self._log(WARNING, text, args, exc_info=exc_info, **kwargs)
 
-    def error(self, text, *args, exc_info=None, **kwargs):
-        if self.isEnabledFor(ERROR):
-            # if self.show:
-            # print(self._fmt(f"ERROR: {str(text)}", ERROR))
-            self._log(ERROR, text, args, exc_info=exc_info, **kwargs)
+    # def error(self, text, *args, exc_info=None, **kwargs):
+    #     if self.isEnabledFor(ERROR):
+    #         # if self.show:
+    #         # print(self._fmt(f"ERROR: {str(text)}", ERROR))
+    #         self._log(ERROR, text, args, exc_info=exc_info, **kwargs)
 
-    def exception(self, text, *args, exc_info=True, **kwargs):
-        self.error(text, *args, exc_info=exc_info, **kwargs)
+    # def exception(self, text, *args, exc_info=True, **kwargs):
+    #     self.error(text, *args, exc_info=exc_info, **kwargs)
 
-    def critical(self, text, *args, exc_info=None, **kwargs):
-        if self.isEnabledFor(CRITICAL):
-            # if self.show:
-            # print(self._fmt(f"CRITICAL: {str(text)}", CRITICAL))
-            self._log(CRITICAL, text, args, exc_info=exc_info, **kwargs)
+    # def critical(self, text, *args, exc_info=None, **kwargs):
+    #     if self.isEnabledFor(CRITICAL):
+    #         # if self.show:
+    #         # print(self._fmt(f"CRITICAL: {str(text)}", CRITICAL))
+    #         self._log(CRITICAL, text, args, exc_info=exc_info, **kwargs)
 
-    def _log(
-        self,
-        level,
-        msg,
-        args,
-        exc_info=None,
-        extra=None,
-        stack_info=False,
-        stacklevel=1,
-    ):
-        if not isinstance(msg, str):
-            msg = str(msg)
-        for line in msg.splitlines():
-            super()._log(level, line, args, None, extra, stack_info, stacklevel)
-        if exc_info:
-            # print(self._fmt(format_exc(), level))
-            for line in format_exc().splitlines():
-                super()._log(ERROR, line, args, None, extra, stack_info, stacklevel)
+    # def _log(
+    #     self,
+    #     level,
+    #     msg,
+    #     args,
+    #     exc_info=None,
+    #     extra=None,
+    #     stack_info=False,
+    #     stacklevel=1,
+    # ):
+    #     if not isinstance(msg, str):
+    #         msg = str(msg)
+    #     for line in msg.splitlines():
+    #         super()._log(level, line, args, None, extra, stack_info, stacklevel)
+    #     if exc_info:
+    #         # print(self._fmt(format_exc(), level))
+    #         for line in format_exc().splitlines():
+    #             super()._log(ERROR, line, args, None, extra, stack_info, stacklevel)
 
     # def _fmt(self, text, level):
     #     d = {

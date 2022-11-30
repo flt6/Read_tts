@@ -79,15 +79,8 @@ class ToApp:
                 continue
             if book.idx == 0:
                 self.logger.debug(config.lang["utils"]["ToApp"]["no_chap"])
-                # continue
             tip = consts.CHOOSEBOOK % (i + 1, book.name, book.author, book.idx)
-            # branch = tree.add(str(i+1))
-            # branch.add(book.name)
-            # branch.add(book.author)
-            # branch.add(str(book.idx))
             t.append(Panel(tip, expand=True))
-            # t.append(Table(tip,expand=True))
-            # print(tip)
             books.append(book)
         print(Columns(t, equal=True))
         return books
