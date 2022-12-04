@@ -75,12 +75,11 @@ class Chapter:
     "内容"
 
     def __init__(
-        self, index: int, title: str, content: str, spl: int = -1, **kwargs
+        self, index: int, title: str, content: str, **kwargs
     ) -> None:
         self.idx = index
         self.title = title
         self.content = content
-        self.spl = spl
         self.dict = kwargs
 
     def __repr__(self):
@@ -91,7 +90,7 @@ class Chapter:
     def __rich_repr__(self) -> rich.repr.Result:
         yield self.idx
         yield self.title
-        yield self.content.strip()[:5]
+        yield self.content.strip()
 
     def get_dict(self):
         return {"idx": self.idx, "title": self.title, "content": self.content}

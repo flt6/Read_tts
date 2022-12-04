@@ -10,6 +10,7 @@ from mytts import CancellationErrorCode, SpeechSynthesisResult
 from requests import get
 from requests.exceptions import RequestException
 from requests.utils import quote  # type: ignore
+from typing import Optional, Type, TypeVar
 from rich import print
 from rich.columns import Columns
 from rich.panel import Panel
@@ -52,6 +53,73 @@ def chk(num: int):
         num >>= 1
     return o
 
+
+class Stack:
+    def __init__(self):
+        self._arr = []
+        self._typ = None
+        
+    def push(self, t) -> None:
+        if self._typ is None:
+            self._typ = type(t)
+        elif type(t) != self._typ:
+            raise TypeError(f"The new object should be '{self._typ}', but '{type(t)}'")
+        self._arr.append(t)
+    def pop(self):
+        t = self._arr.pop()
+        assert type(t) == self._typ
+        return t
+    def length(self) -> int:
+        return len(self._arr)
+    def empty(self):
+        return len(self._arr) == 0
+    def clear(self):
+        self._arr.clear()
+        self._typ = None
+    def __len__(self) -> int:
+        return self.length()
+    def __rich_repr__(self):
+        yield "Stack"
+        yield f"length: {self.length()}"
+        contain = ""
+        for obj in self._arr:
+            contain += str(obj)
+            contain += ", "
+        yield f"contain: {contain}"
+
+
+class Queue:
+    def __init__(self):
+        self._arr = []
+        self._typ = None
+        
+    def push(self, t) -> None:
+        if self._typ is None:
+            self._typ = type(t)
+        elif type(t) != self._typ:
+            raise TypeError(f"The new object should be '{self._typ}', but '{type(t)}'")
+        self._arr.append(t)
+    def pop(self):
+        t = self._arr.pop(0)
+        assert type(t) == self._typ
+        return t
+    def length(self) -> int:
+        return len(self._arr)
+    def empty(self):
+        return len(self._arr) == 0
+    def clear(self):
+        self._arr.clear()
+        self._typ = None
+    def __len__(self) -> int:
+        return self.length()
+    def __rich_repr__(self):
+        yield "Stack"
+        yield f"length: {self.length()}"
+        contain = ""
+        for obj in self._arr:
+            contain += str(obj)
+            contain += ", "
+        yield f"contain: {contain}"
 
 class ToApp:
     def __init__(self):
@@ -183,25 +251,77 @@ class ToApp:
 
 
 class Trans:
-    def __init__(self, type: int = 1):
-        self.type = type
+    open_bracket = "“\"'【"
+    close_bracket = "”\"'】"
 
-    def content_basic(self, chap: Chapter):
+    def __init__(self, type: Optional[int] = 1):
+        self.type = type
+        self.area = Queue()
+        self.area.push((-1,-1))
+
+    def trans(self, chap: Chapter):
         con = chap.content
         con = chap.title + "\n" + con
-        lines = con.splitlines()
-        totLines = len(lines)
+        con_lines = con.splitlines()
+        totLines = len(con_lines)
         content = []
         i = 0
         while i < totLines:
+            cut = ""
             tem = ""
-            while len(tem) < config.MAX_CHAR and i < totLines:
-                tem += lines[i]
-                tem += "\n"
+            area = self.area.pop()
+            while len(cut) < config.MAX_CHAR and i < totLines:
+                if i >= area[0] and i <= area[1]:
+                    tem += con_lines[i] + "\n"
+                else:
+                    cut += con_lines[i] + "\n"
+                # if i == area[0]:
+                #     tem = ""
+                if i == area[1]:
+                    if len(cut) < config.MAX_CHAR-len(tem)+100:
+                        cut += tem
+                        area = self.area.pop()
                 i += 1
-            tem = escape(tem)
-            content.append(consts.SSML_MODEL.format(tem))
+            # cut = escape(cut)
+            content.append(consts.SSML_MODEL.format(cut))
         return content
+
+    def _chk(self, con: str):
+        st = Stack()
+        self.area.clear()
+        cnt = 0
+        newst:list[str] = []
+        for i, line in enumerate(con.splitlines()):
+            INVALID = 0xFFFFFFFF
+            tem=INVALID
+            # This shouldn't be used. As a result, an IndexError will be raised.
+            tmp_line = [s for s in line]
+            for j, ch in enumerate(line):
+                if ch in self.open_bracket and tem == INVALID:
+                    st.push(self.open_bracket.index(ch))
+                    tmp_line[j] = "\x01"
+                    tem = i
+                    cnt += 1
+                elif ch in self.close_bracket and tem != INVALID:
+                    self.area.push((tem+1,i+1))
+                    tmp_line[j] = "\x02"
+                    tem = INVALID
+                    if st.pop()!=self.close_bracket.index(ch):
+                        return None
+            tmp_line = ''.join(tmp_line)
+            tmp_line = tmp_line.replace("\x01",'</prosody></voice><voice name="zh-CN-YunyangNeural"><prosody rate="18%" pitch="0%">')
+            tmp_line = tmp_line.replace("\x02",'</prosody></voice><voice name="zh-CN-XiaohanNeural"><prosody rate="18%" pitch="0%">')
+            newst.append(tmp_line)
+        if self.area.empty():
+            self.area.push((-1,-1))
+        if not st.empty(): return None
+        return newst
+
+    def char(self,con: str) -> str:
+        cnt = self._chk(con)
+        if cnt == -1 or cnt>50:
+            return con
+        
 
     def title(self, chap: Chapter):
         title = sub(r"""[\*\/\\\|\<\>\? \:\.\'\"\!]""", "", chap.title)
@@ -209,10 +329,21 @@ class Trans:
         return title
 
     def __call__(self, chap: Chapter):
+        title = self.title(chap)
+        opt: list[Chapter] = []
         if self.type == 1:
-            opt: list[Chapter] = []
-            title = self.title(chap)
-            content = self.content_basic(chap)
+            content = self.trans(chap)
+            for i, t in enumerate(content):
+                opt.append(Chapter(chap.idx, title + f" ({i}).mp3", t))
+            return opt
+        elif self.type == 2:
+            con_lines = self._chk(chap.content)
+            if con_lines is None:
+                self.type = 1
+                self.__call__(chap)
+            assert con_lines is not None
+            chap.content = "\n".join(con_lines)
+            content = self.trans(chap)
             for i, t in enumerate(content):
                 opt.append(Chapter(chap.idx, title + f" ({i}).mp3", t))
             return opt
