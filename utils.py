@@ -10,11 +10,13 @@ from mytts import CancellationErrorCode, SpeechSynthesisResult
 from requests import get
 from requests.exceptions import RequestException
 from requests.utils import quote  # type: ignore
-from typing import Optional, Type, TypeVar
+from typing import Optional
 from rich import print
 from rich.columns import Columns
 from rich.panel import Panel
 from rich.progress import Progress
+from rich.traceback import Traceback
+from traceback import format_exception
 
 import config
 import consts
@@ -89,8 +91,11 @@ class Stack:
 
 
 class Queue:
+    '''
+    self._arr is a set.
+    '''
     def __init__(self):
-        self._arr = []
+        self._arr = list()
         self._typ = None
         
     def push(self, t) -> None:
@@ -98,7 +103,8 @@ class Queue:
             self._typ = type(t)
         elif type(t) != self._typ:
             raise TypeError(f"The new object should be '{self._typ}', but '{type(t)}'")
-        self._arr.append(t)
+        if t not in self._arr:
+            self._arr.append(t)
     def pop(self):
         t = self._arr.pop(0)
         assert type(t) == self._typ
@@ -112,6 +118,14 @@ class Queue:
         self._typ = None
     def __len__(self) -> int:
         return self.length()
+    def __repr__(self) -> str:
+        contain = ""
+        for obj in self._arr:
+            contain += str(obj)
+            contain += ", "
+        return f"<Stack len={self.length()} contain={contain}>"
+    def __str__(self) -> str:
+        return self.__repr__()
     def __rich_repr__(self):
         yield "Stack"
         yield f"length: {self.length()}"
@@ -257,7 +271,7 @@ class Trans:
     def __init__(self, type: Optional[int] = 1):
         self.type = type
         self.area = Queue()
-        self.area.push((-1,-1))
+        self.logger = getLogger("Trans")
 
     def trans(self, chap: Chapter):
         con = chap.content
@@ -266,11 +280,16 @@ class Trans:
         totLines = len(con_lines)
         content = []
         i = 0
+        tem = ""
         while i < totLines:
-            cut = ""
+            cut = tem
             tem = ""
-            area = self.area.pop()
-            while len(cut) < config.MAX_CHAR and i < totLines:
+            if self.area.empty():
+                area = (-1,-1)
+            else:
+                area = self.area.pop()
+            cnt = 0
+            while len(cut) < config.MAX_CHAR and i < totLines and cnt<24:
                 if i >= area[0] and i <= area[1]:
                     tem += con_lines[i] + "\n"
                 else:
@@ -280,9 +299,16 @@ class Trans:
                 if i == area[1]:
                     if len(cut) < config.MAX_CHAR-len(tem)+100:
                         cut += tem
-                        area = self.area.pop()
+                        tem = ""
+                        cnt += 1
+                        if self.area.empty():
+                            area = (-1,-1)
+                        else:
+                            area = self.area.pop()
                 i += 1
-            # cut = escape(cut)
+            cut = escape(cut)
+            cut = cut.replace("\x01",'</prosody></voice><voice name="zh-CN-XiaoxuanNeural"><prosody rate="18%" pitch="0%">')
+            cut = cut.replace("\x02",'</prosody></voice><voice name="zh-CN-XiaohanNeural"><prosody rate="18%" pitch="0%">')
             content.append(consts.SSML_MODEL.format(cut))
         return content
 
@@ -291,6 +317,7 @@ class Trans:
         self.area.clear()
         cnt = 0
         newst:list[str] = []
+        log = []
         for i, line in enumerate(con.splitlines()):
             INVALID = 0xFFFFFFFF
             tem=INVALID
@@ -298,30 +325,48 @@ class Trans:
             tmp_line = [s for s in line]
             for j, ch in enumerate(line):
                 if ch in self.open_bracket and tem == INVALID:
-                    st.push(self.open_bracket.index(ch))
-                    tmp_line[j] = "\x01"
-                    tem = i
-                    cnt += 1
+                    tem = self._chk_push(st, cnt, log, i, line, tmp_line, j, ch)
                 elif ch in self.close_bracket and tem != INVALID:
                     self.area.push((tem+1,i+1))
+                    log.append(f'line {i}: {line}')
+                    log.append(f'character {j}: pop')
                     tmp_line[j] = "\x02"
                     tem = INVALID
-                    if st.pop()!=self.close_bracket.index(ch):
+                    top = st.pop()
+                    if top!=self.close_bracket.index(ch):
+                        self.logger.debug("Scan failed.")
+                        self.logger.debug(tmp_line)
                         return None
+                # elif ch in self.open_bracket:
+                #     self.logger.debug("open_bracket but tem is not INVALID.")
+                    
+                #     self.logger.debug(f"tem={tem}")
+                #     self.logger.debug(f"newst={newst}")
+                #     self.area.push((tem+1,tem+1))
+                #     newst[tem]+="\x02"
+                #     tem = INVALID
+                #     top = st.pop()
+
+                #     tem = self._chk_push(st, cnt, log, i, line, tmp_line, j, ch)
             tmp_line = ''.join(tmp_line)
-            tmp_line = tmp_line.replace("\x01",'</prosody></voice><voice name="zh-CN-YunyangNeural"><prosody rate="18%" pitch="0%">')
-            tmp_line = tmp_line.replace("\x02",'</prosody></voice><voice name="zh-CN-XiaohanNeural"><prosody rate="18%" pitch="0%">')
             newst.append(tmp_line)
         if self.area.empty():
             self.area.push((-1,-1))
-        if not st.empty(): return None
+        if not st.empty():
+            self.logger.debug("Scan failed.")
+            self.logger.debug(f"Not empty: {st._arr}")
+            self.logger.debug(log)
+            return None
         return newst
 
-    def char(self,con: str) -> str:
-        cnt = self._chk(con)
-        if cnt == -1 or cnt>50:
-            return con
-        
+    def _chk_push(self, st, cnt, log, i, line, tmp_line, j, ch):
+        st.push(self.open_bracket.index(ch))
+        log.append(f'line {i}: {line}')
+        log.append(f'character {j}: push')
+        tmp_line[j] = "\x01"
+        tem = i
+        cnt += 1
+        return tem
 
     def title(self, chap: Chapter):
         title = sub(r"""[\*\/\\\|\<\>\? \:\.\'\"\!]""", "", chap.title)
@@ -337,10 +382,12 @@ class Trans:
                 opt.append(Chapter(chap.idx, title + f" ({i}).mp3", t))
             return opt
         elif self.type == 2:
+            self.logger.debug(f"Start handling {chap.title} with character mode.")
             con_lines = self._chk(chap.content)
             if con_lines is None:
-                self.type = 1
-                self.__call__(chap)
+                self.logger.error("Character transfering scan failed, falling back to basic.")
+                self.logger.debug(chap.title)
+                return Trans(1)(chap)
             assert con_lines is not None
             chap.content = "\n".join(con_lines)
             content = self.trans(chap)
@@ -391,11 +438,20 @@ class ToServer:
                     self.ups = True
                     logger.error(config.lang["utils"]["ToSer"]["429"])
                     raise UPSLimittedError(detail.error_details)
+                elif detail.error_code == CancellationErrorCode.RuntimeError:
+                    logger.error("RuntimeError: ")
+                    exc = detail.exception
+                    if isinstance(exc, BaseException):
+                        print(Traceback.from_exception(type(exc),exc,exc.__traceback__))
+                        logger.error("".join(format_exception(type(exc),exc,exc.__traceback__)))
+                    else:
+                        print(exc)
+                        logger.error(exc)
             if ret.reason != consts.TTS_SUC:
                 logger.debug("Error")
                 logger.error(config.lang["utils"]["ToSer"]["fail"] + str(ret.reason))
                 logger.debug("idx=%d" % chapters[j].idx)
-                logger.debug("SSML Text: " + chapters[j].content)
+                # logger.debug("SSML Text: " + chapters[j].content)
                 raise RuntimeError("ret.reason=%s" % ret.reason)
             else:
                 assert ret.audio_duration is not None

@@ -79,6 +79,7 @@ class Main:
         for chap in chaps:
             tem.extend(self.trans(chap))
         logger.info(lang["main"]["trans_end"])
+        logger.debug(tem)
         return tem
 
     def tts(self, chaps: list[Chapter]):
@@ -113,6 +114,7 @@ class Main:
         book, area = self.interactive()
         chaps = self.dealApp(book, area)
         chaps = self.textTrans(chaps)
+        # print(chaps[0].content)
         retry = self.tts(chaps)
         self.merge(chaps)
         if retry is not None:
@@ -142,7 +144,7 @@ def main(typ: int):
         t = time_fmt(end - bgn)
         logger.info(lang["main"]["end_1"] + t)
         logger.info(lang["main"]["end_2"] % ((end - bgn) / length))
-        logger.info(lang["main"]["end_3"] % (main.ser.total_time / (end - bgn)))
+        logger.info(lang["main"]["end_3"] % ((main.ser.total_time * 60 / (end - bgn))))
 
     except SystemExit as e:
         logger.info(f"SystemExit with code {e.code} got, may exit not normally.")
@@ -157,5 +159,5 @@ def main(typ: int):
 
 
 if __name__ == "__main__":
-    main(1)
+    main(2)
     input("Press enter to exit.")
