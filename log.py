@@ -1,17 +1,13 @@
 from logging import (
-    CRITICAL,
     DEBUG,
     ERROR,
     INFO,
-    WARNING,
     FileHandler,
     Formatter,
     Logger,
 )
-from os import mkdir, path
-from traceback import format_exc
-
 from rich.logging import RichHandler
+from os import mkdir, path
 
 import config
 
@@ -52,7 +48,8 @@ class Log(Logger):
         if self.isdebug:
             self.addHandler(self.debug_handle)
         if self.show:
-            self.addHandler(RichHandler(rich_tracebacks=True, locals_max_string=50))
+            self.addHandler(RichHandler(
+                rich_tracebacks=True, locals_max_string=50))
 
     def get_logger(self):
         return self

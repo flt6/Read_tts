@@ -120,7 +120,8 @@ class Main:
         if retry is not None:
             retry = set(retry)
             logger.info(
-                lang["main"]["all_failed"] + " ".join([str(i.idx) for i in retry])
+                lang["main"]["all_failed"] +
+                " ".join([str(i.idx) for i in retry])
             )
             k = len(retry) / len(chaps)
             if k > 0.7:
@@ -144,10 +145,12 @@ def main(typ: int):
         t = time_fmt(end - bgn)
         logger.info(lang["main"]["end_1"] + t)
         logger.info(lang["main"]["end_2"] % ((end - bgn) / length))
-        logger.info(lang["main"]["end_3"] % ((main.ser.total_time * 60 / (end - bgn))))
+        logger.info(lang["main"]["end_3"] %
+                    ((main.ser.total_time * 60 / (end - bgn))))
 
     except SystemExit as e:
-        logger.info(f"SystemExit with code {e.code} got, may exit not normally.")
+        logger.info(
+            f"SystemExit with code {e.code} got, may exit not normally.")
         return
     except KeyboardInterrupt:
         logger.info("Got keyboard interrupt, exit forcely.")

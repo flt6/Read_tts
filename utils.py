@@ -60,26 +60,33 @@ class Stack:
     def __init__(self):
         self._arr = []
         self._typ = None
-        
+
     def push(self, t) -> None:
         if self._typ is None:
             self._typ = type(t)
         elif type(t) != self._typ:
-            raise TypeError(f"The new object should be '{self._typ}', but '{type(t)}'")
+            raise TypeError(
+                f"The new object should be '{self._typ}', but '{type(t)}'")
         self._arr.append(t)
+
     def pop(self):
         t = self._arr.pop()
         assert type(t) == self._typ
         return t
+
     def length(self) -> int:
         return len(self._arr)
+
     def empty(self):
         return len(self._arr) == 0
+
     def clear(self):
         self._arr.clear()
         self._typ = None
+
     def __len__(self) -> int:
         return self.length()
+
     def __rich_repr__(self):
         yield "Stack"
         yield f"length: {self.length()}"
@@ -94,38 +101,48 @@ class Queue:
     '''
     self._arr is a set.
     '''
+
     def __init__(self):
         self._arr = list()
         self._typ = None
-        
+
     def push(self, t) -> None:
         if self._typ is None:
             self._typ = type(t)
         elif type(t) != self._typ:
-            raise TypeError(f"The new object should be '{self._typ}', but '{type(t)}'")
+            raise TypeError(
+                f"The new object should be '{self._typ}', but '{type(t)}'")
         if t not in self._arr:
             self._arr.append(t)
+
     def pop(self):
         t = self._arr.pop(0)
         assert type(t) == self._typ
         return t
+
     def length(self) -> int:
         return len(self._arr)
+
     def empty(self):
         return len(self._arr) == 0
+
     def clear(self):
         self._arr.clear()
         self._typ = None
+
     def __len__(self) -> int:
         return self.length()
+
     def __repr__(self) -> str:
         contain = ""
         for obj in self._arr:
             contain += str(obj)
             contain += ", "
         return f"<Stack len={self.length()} contain={contain}>"
+
     def __str__(self) -> str:
         return self.__repr__()
+
     def __rich_repr__(self):
         yield "Stack"
         yield f"length: {self.length()}"
@@ -134,6 +151,7 @@ class Queue:
             contain += str(obj)
             contain += ", "
         yield f"contain: {contain}"
+
 
 class ToApp:
     def __init__(self):
@@ -179,7 +197,8 @@ class ToApp:
         return range(bgn, to)
 
     def choose_single(self):
-        chaps = input(config.lang["utils"]["ToApp"]["retry_pro"]).strip().split(" ")
+        chaps = input(config.lang["utils"]["ToApp"]
+                      ["retry_pro"]).strip().split(" ")
         return list({int(i) for i in chaps})
 
     def get_charpter_list(self, book: Book):
@@ -285,11 +304,11 @@ class Trans:
             cut = tem
             tem = ""
             if self.area.empty():
-                area = (-1,-1)
+                area = (-1, -1)
             else:
                 area = self.area.pop()
             cnt = 0
-            while len(cut) < config.MAX_CHAR and i < totLines and cnt<24:
+            while len(cut) < config.MAX_CHAR and i < totLines and cnt < 24:
                 if i >= area[0] and i <= area[1]:
                     tem += con_lines[i] + "\n"
                 else:
@@ -300,19 +319,21 @@ class Trans:
                     cut += tem
                     cnt += tem.count("\x02")
                     tem = ""
-                    if len(cut) < config.MAX_CHAR and i < totLines and cnt<24:
+                    if len(cut) < config.MAX_CHAR and i < totLines and cnt < 24:
                         if self.area.empty():
-                            area = (-1,-1)
+                            area = (-1, -1)
                         else:
                             area = self.area.pop()
                 i += 1
             cut = escape(cut)
-            cut = cut.replace("\x01",'</prosody></voice><voice name="zh-CN-YunxiNeural"><prosody rate="18%" pitch="0%">')
-            cut = cut.replace("\x02",'</prosody></voice><voice name="zh-CN-XiaohanNeural"><prosody rate="18%" pitch="0%">')
-            if cut.count("</voice>")>50:
+            cut = cut.replace(
+                "\x01", '</prosody></voice><voice name="zh-CN-YunxiNeural"><prosody rate="18%" pitch="0%">')
+            cut = cut.replace(
+                "\x02", '</prosody></voice><voice name="zh-CN-XiaohanNeural"><prosody rate="18%" pitch="0%">')
+            if cut.count("</voice>") > 50:
                 self.logger.error("Voice tag out of limit.")
                 self.logger.debug(con)
-                raise AssertionError("Voice tag out of limit.") 
+                raise AssertionError("Voice tag out of limit.")
             content.append(consts.SSML_MODEL.format(cut))
         return content
 
@@ -320,30 +341,31 @@ class Trans:
         st = Stack()
         self.area.clear()
         cnt = 0
-        newst:list[str] = []
+        newst: list[str] = []
         log = []
         for i, line in enumerate(con.splitlines()):
             INVALID = 0xFFFFFFFF
-            tem=INVALID
+            tem = INVALID
             # This shouldn't be used. As a result, an IndexError will be raised.
             tmp_line = [s for s in line]
             for j, ch in enumerate(line):
                 if ch in self.open_bracket and tem == INVALID:
-                    tem = self._chk_push(st, cnt, log, i, line, tmp_line, j, ch)
+                    tem = self._chk_push(
+                        st, cnt, log, i, line, tmp_line, j, ch)
                 elif ch in self.close_bracket and tem != INVALID:
-                    self.area.push((tem+1,i+1))
+                    self.area.push((tem+1, i+1))
                     log.append(f'line {i}: {line}')
                     log.append(f'character {j}: pop')
                     tmp_line[j] = "\x02"
                     tem = INVALID
                     top = st.pop()
-                    if top!=self.close_bracket.index(ch):
+                    if top != self.close_bracket.index(ch):
                         self.logger.debug("Scan failed.")
                         self.logger.debug(tmp_line)
                         return None
                 # elif ch in self.open_bracket:
                 #     self.logger.debug("open_bracket but tem is not INVALID.")
-                    
+
                 #     self.logger.debug(f"tem={tem}")
                 #     self.logger.debug(f"newst={newst}")
                 #     self.area.push((tem+1,tem+1))
@@ -355,7 +377,7 @@ class Trans:
             tmp_line = ''.join(tmp_line)
             newst.append(tmp_line)
         if self.area.empty():
-            self.area.push((-1,-1))
+            self.area.push((-1, -1))
         if not st.empty():
             self.logger.debug("Scan failed.")
             self.logger.debug(f"Not empty: {st._arr}")
@@ -386,16 +408,18 @@ class Trans:
                 opt.append(Chapter(chap.idx, title + f" ({i}).mp3", t))
             return opt
         elif self.type == 2:
-            self.logger.debug(f"Start handling {chap.title} with character mode.")
+            self.logger.debug(
+                f"Start handling {chap.title} with character mode.")
             try:
                 con_lines = self._chk(chap.content)
                 assert con_lines is not None
                 chap.content = "\n".join(con_lines)
                 content = self.trans(chap)
             except AssertionError as e:
-                self.logger.error("Character transfering scan failed, falling back to basic.")
+                self.logger.error(
+                    "Character transfering scan failed, falling back to basic.")
                 self.logger.debug(chap.title)
-                ErrorHandler(e,"Trans",self.logger)
+                ErrorHandler(e, "Trans", self.logger)
                 return Trans(1)(chap)
             for i, t in enumerate(content):
                 opt.append(Chapter(chap.idx, title + f" ({i}).mp3", t))
@@ -448,14 +472,17 @@ class ToServer:
                     logger.error("RuntimeError: ")
                     exc = detail.exception
                     if isinstance(exc, BaseException):
-                        print(Traceback.from_exception(type(exc),exc,exc.__traceback__))
-                        logger.error("".join(format_exception(type(exc),exc,exc.__traceback__)))
+                        print(Traceback.from_exception(
+                            type(exc), exc, exc.__traceback__))
+                        logger.error("".join(format_exception(
+                            type(exc), exc, exc.__traceback__)))
                     else:
                         print(exc)
                         logger.error(exc)
             if ret.reason != consts.TTS_SUC:
                 logger.debug("Error")
-                logger.error(config.lang["utils"]["ToSer"]["fail"] + str(ret.reason))
+                logger.error(config.lang["utils"]
+                             ["ToSer"]["fail"] + str(ret.reason))
                 logger.debug("idx=%d" % chapters[j].idx)
                 # logger.debug("SSML Text: " + chapters[j].content)
                 raise RuntimeError("ret.reason=%s" % ret.reason)
@@ -478,7 +505,8 @@ class ToServer:
         stop_cnt = 0
         with Progress() as pro:
             pro_task = pro.add_task("TTS", total=len(chapters))
-            pro.update(pro_task, description="%02d task for one time" % max_task)
+            pro.update(
+                pro_task, description="%02d task for one time" % max_task)
             task_cnt = 0
             for i, chap in enumerate(chapters):
                 opt = self.optDir + "/" + chap.title
@@ -545,7 +573,8 @@ def _merge(dir: str, logger: Log, ch: list[Chapter], name: str, is_remove: bool)
         ret = run(cmd, stderr=PIPE)
         if ret.returncode != 0:
             logger.error(ret.stderr.decode("utf-8"))
-            logger.error("Error occurred while merging. code=%d" % ret.returncode)
+            logger.error("Error occurred while merging. code=%d" %
+                         ret.returncode)
         else:
             logger.debug(ret.stderr.decode("utf-8"))
             if is_remove:
