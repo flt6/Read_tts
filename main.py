@@ -3,7 +3,8 @@ from sys import exit
 from time import sleep, time
 from traceback import format_exc
 
-from config import MAX_RETRY, MAX_TASK, OPT_DIR, RETRY_SUB, WAIT_TIME, check, lang
+from config import (MAX_RETRY, MAX_TASK, OPT_DIR, RETRY_SUB,
+                    WAIT_TIME, TRANS_MODE, check, lang)
 from consts import MODE_CHOOSE
 from exceptions import ErrorHandler
 from log import getLogger
@@ -162,5 +163,5 @@ def main(typ: int):
 
 
 if __name__ == "__main__":
-    main(2)
+    main(TRANS_MODE)
     input("Press enter to exit.")
