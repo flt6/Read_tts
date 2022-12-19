@@ -297,18 +297,22 @@ class Trans:
                 # if i == area[0]:
                 #     tem = ""
                 if i == area[1]:
-                    if len(cut) < config.MAX_CHAR-len(tem)+100:
-                        cut += tem
-                        tem = ""
-                        cnt += 1
+                    cut += tem
+                    cnt += tem.count("\x02")
+                    tem = ""
+                    if len(cut) < config.MAX_CHAR and i < totLines and cnt<24:
                         if self.area.empty():
                             area = (-1,-1)
                         else:
                             area = self.area.pop()
                 i += 1
             cut = escape(cut)
-            cut = cut.replace("\x01",'</prosody></voice><voice name="zh-CN-XiaoxuanNeural"><prosody rate="18%" pitch="0%">')
+            cut = cut.replace("\x01",'</prosody></voice><voice name="zh-CN-YunxiNeural"><prosody rate="18%" pitch="0%">')
             cut = cut.replace("\x02",'</prosody></voice><voice name="zh-CN-XiaohanNeural"><prosody rate="18%" pitch="0%">')
+            if cut.count("</voice>")>50:
+                self.logger.error("Voice tag out of limit.")
+                self.logger.debug(con)
+                raise AssertionError("Voice tag out of limit.") 
             content.append(consts.SSML_MODEL.format(cut))
         return content
 
@@ -383,14 +387,16 @@ class Trans:
             return opt
         elif self.type == 2:
             self.logger.debug(f"Start handling {chap.title} with character mode.")
-            con_lines = self._chk(chap.content)
-            if con_lines is None:
+            try:
+                con_lines = self._chk(chap.content)
+                assert con_lines is not None
+                chap.content = "\n".join(con_lines)
+                content = self.trans(chap)
+            except AssertionError as e:
                 self.logger.error("Character transfering scan failed, falling back to basic.")
                 self.logger.debug(chap.title)
+                ErrorHandler(e,"Trans",self.logger)
                 return Trans(1)(chap)
-            assert con_lines is not None
-            chap.content = "\n".join(con_lines)
-            content = self.trans(chap)
             for i, t in enumerate(content):
                 opt.append(Chapter(chap.idx, title + f" ({i}).mp3", t))
             return opt
