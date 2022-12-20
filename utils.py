@@ -265,20 +265,20 @@ class Trans:
             else:
                 area = self.area.pop()
             cnt = 0
-            while len(cut) < config.MAX_CHAR and i < totLines and cnt < 24:
+            while len(cut) < config.MAX_CHAR and i < totLines and cnt+tem.count("\x02") < 24:
                 if i >= area[0] and i <= area[1]:
                     tem += con_lines[i] + "\n"
                 else:
                     cut += con_lines[i] + "\n"
-                if i == area[1]:
+                if i == area[1] and len(cut) < config.MAX_CHAR and i < totLines and cnt+tem.count("\x02") < 24:
                     cut += tem
                     cnt += tem.count("\x02")
                     tem = ""
-                    if len(cut) < config.MAX_CHAR and i < totLines and cnt < 24:
-                        if self.area.empty():
-                            area = (-1, -1)
-                        else:
-                            area = self.area.pop()
+                    if self.area.empty():
+                        area = (-1, -1)
+                    else:
+                        area = self.area.pop()
+                    
                 i += 1
             cut = escape(cut)
             cut = cut.replace(
@@ -465,13 +465,13 @@ class ToServer:
                 task_cnt += 1
                 self.logger.info("Start waiting.")
                 while task_cnt >= max_task:
-                    sleep(2)
+                    sleep(1)
                     task_cnt = self._deal(chapters, retry, pro, pro_task, task_cnt)
                     if self.ups:
                         self.logger.error("429 UPS Limitted.")
                         self.logger.info("Waiting for all runnning jobs...")
                         while task_cnt > 0:
-                            sleep(2)
+                            sleep(1)
                             task_cnt = self._deal(chapters, retry, pro, pro_task, task_cnt)
                         self.ups = False
                         stop_cnt += 1
@@ -485,7 +485,7 @@ class ToServer:
             # ----------------------------------------------
             self.logger.info("Start last async waiting.")
             while task_cnt > 0:
-                sleep(2)
+                sleep(1)
                 task_cnt = self._deal(chapters, retry, pro, pro_task, task_cnt)
             self.logger.info("End async waiting.")
             # ----------------------------------------------
