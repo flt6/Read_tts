@@ -8,7 +8,7 @@ import config
 from log import getLogger
 
 
-class ServerError(Exception):
+class ServerError(RuntimeError):
     def __init__(self, message: Any = None):
         """
         @param message:
@@ -83,14 +83,15 @@ class ErrorHandler:
 
     def show(self, message: Any):
         level = self.level
+        message = str(message)
         for line in message.splitlines():
             line = f"{self.getStack()}: " + line
-            if level == 1:
-                self.lgerr(line)
-            elif level == 2:
-                self.lgcri(line)
-            elif level == 3:
-                self.lgexp(line, exc_info=True)
+        if level == 1:
+            self.lgerr(message)
+        elif level == 2:
+            self.lgcri(message)
+        elif level == 3:
+            self.lgexp(message, exc_info=True)
         if self.dbg:
             self.lgdbg("", exc_info=True)
 
@@ -134,10 +135,13 @@ class ErrorHandler:
             msg = "Permission denied!"
         elif isinstance(err, FileExistsError):
             msg = "File exists!" + err.args[0]
+        elif isinstance(err, AssertionError):
+            msg = "Assertion failed!\n"
+            msg+= "Reason: " + err.args[0]
         elif self.src == "AsyncReq":
             msg = "Async request error!\n"
             if isinstance(err, UPSLimittedError):
-                msg = "Audio length is zero."
+                msg = "UPS limited error."
             elif isinstance(err, RuntimeError):
                 msg += f"RE: {err}"
             else:

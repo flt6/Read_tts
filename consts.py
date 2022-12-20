@@ -11,7 +11,6 @@ Choose running mode:
 1. Basic
 2. Fix
 3. Concat
-4. Delete temporary files
 """
 
 CHOOSEBOOK = """
@@ -28,15 +27,14 @@ DEFAULT_CONFIG = {
     "MAX_CHAR": 1500,
     "WAIT_TIME": 5,
     "RETRY_SUB": 2,
-    "LIMIT_429": 0.7,
     "MAX_WAIT": 20,
-    "FAIL_429": 3,
     "TRANS_MODE": 2,
     "TIMEOUT": 3,
     "OPT_DIR": "Output",
     "DEBUG": False,
     "TO_CONSOLE": True,
     "LANG_FILE": "lang_zh.json",
+    "ip": ""
 }
 
 DEFAULT_TYPE = {
@@ -45,15 +43,14 @@ DEFAULT_TYPE = {
     "MAX_CHAR": (int,),
     "WAIT_TIME": (int, float),
     "RETRY_SUB": (int, float),
-    "LIMIT_429": (float,),
     "MAX_WAIT": (int,),
-    "FAIL_429": (int,),
     "TRANS_MODE": (int,),
     "TIMEOUT": (int, float),
     "OPT_DIR": (str,),
     "DEBUG": (bool,),
     "TO_CONSOLE": (bool,),
     "LANG_FILE": (str,),
+    "ip": (str,)
 }
 
 

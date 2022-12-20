@@ -91,6 +91,3 @@ class Chapter:
         yield self.idx
         yield self.title
         yield self.content.strip()
-
-    def get_dict(self):
-        return {"idx": self.idx, "title": self.title, "content": self.content}

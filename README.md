@@ -75,9 +75,7 @@
 |MAX_CHAR|int|1500|单个音频最大字数, 你可以查看[这个](https://github.com/kxxt/aspeak#limitations)|
 |WAIT_TIME|int/float|5|两次重试间等待时间|
 |RETRY_SUB|int/float|2|当重试时，任务数会除以`MAX_TASK`<sup>[1](#Notes)</sup>|
-|LIMIT_429|float|0.7|终止并行, 并等待一些时间来避免Azure的限制([429异常](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Status/429)).<sup>[2](#Notes)</sup>|
 |MAX_WAIT|int|20|最大等待时间<sup>[2](#Notes)</sup>|
-|FAIL_429|int|3|最小任务完成数<sup>[2](#Notes)</sup>|
 |TRANS_MODE|int|2|转化模式：目前有效值为基础模式(1)、角色模式(2)<sup>[4](#Notes)</sup>|
 |TIMEOUT|int/float|3|链接到app的超时值（单位：秒）|
 |OPT_DIR|int|Output|输出文件夹|

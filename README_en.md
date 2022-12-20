@@ -11,7 +11,7 @@ This is a CIL program to fetch chapters from [Read App](https://github.com/gedoo
 - install dependencies: `pip install -r requirment.txt`
 - download [ffmpeg.exe](https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.7z) and save it in the same directory as the program or set in `path`.
 
-### withoust python environment
+### without python environment
 
 - download executable file in the latest Release.
 - download [ffmpeg.exe](https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.7z) and save it in the same directory as the program or set in `path`.
@@ -67,9 +67,7 @@ If you see files like `340_第xxx章xxx (1).mp3` for the last chapter, this is a
 |MAX_CHAR|int|1500|The max character for one audio, you can refer to [this](https://github.com/kxxt/aspeak#limitations)|
 |WAIT_TIME|int/float|5|Wait time during two retries|
 |RETRY_SUB|int/float|2|When starting retry, `MAX_TASK` will be divided this value<sup>[1](#Notes)</sup>|
-|LIMIT_429|float|0.7|Stop multiple task running and wait all tasks to finish, and wait for some time to avoid limited by Azure([Code 429](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Status/429)).<sup>[2](#Notes)</sup>|
 |MAX_WAIT|int|20|Max time to wait<sup>[2](#Notes)</sup>|
-|FAIL_429|int|3|Min tasks ran<sup>[2](#Notes)</sup>|
 |TIMEOUT|int/float|3|Timeout when connecting to App|
 |OPT_DIR|int|Output|Output folder|
 |DEBUG|bool|`false`|Show debug infomation|
@@ -82,7 +80,7 @@ If you see files like `340_第xxx章xxx (1).mp3` for the last chapter, this is a
 
 ## FAQ
 
-### Q: Showe text like "\033****" and so on
+### Q: Show text like "\033****" and so on
 
 A: use cmder to run it, the console should support ANSI colorful output.
 

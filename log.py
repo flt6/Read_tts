@@ -16,38 +16,37 @@ class Log(Logger):
     def __init__(self, name, show=True, debug=False) -> None:
         """Provide log function"""
         super().__init__(name, DEBUG if debug else INFO)
-        self.isdebug = debug
+        self._isdebug = debug
         if not path.exists("logs"):
             mkdir("logs")
         elif not path.isdir("logs"):
             raise FileExistsError(
                 "There is a file named 'logs', which is the same as the log directory."
             )
-        self.show = show
-        self.super = super()
-        self.gen_handle()
-        self.register_handles()
+        self._show = show
+        self._gen_handle()
+        self._register_handles()
 
-    def gen_handle(self) -> None:
+    def _gen_handle(self) -> None:
         fmt = Formatter("%(asctime)s - %(levelname)8s - %(name)s: %(message)s")
 
-        self.info_handle = FileHandler("logs/info.log")
-        self.info_handle.setLevel(INFO)
-        self.info_handle.setFormatter(fmt)
-        self.error_handle = FileHandler("logs/error.log")
-        self.error_handle.setLevel(ERROR)
-        self.error_handle.setFormatter(fmt)
-        if self.isdebug:
-            self.debug_handle = FileHandler("logs/debug.log")
-            self.debug_handle.setLevel(DEBUG)
-            self.debug_handle.setFormatter(fmt)
+        self._info_handle = FileHandler("logs/info.log")
+        self._info_handle.setLevel(INFO)
+        self._info_handle.setFormatter(fmt)
+        self._error_handle = FileHandler("logs/error.log")
+        self._error_handle.setLevel(ERROR)
+        self._error_handle.setFormatter(fmt)
+        if self._isdebug:
+            self._debug_handle = FileHandler("logs/debug.log")
+            self._debug_handle.setLevel(DEBUG)
+            self._debug_handle.setFormatter(fmt)
 
-    def register_handles(self) -> None:
-        self.addHandler(self.info_handle)
-        self.addHandler(self.error_handle)
-        if self.isdebug:
-            self.addHandler(self.debug_handle)
-        if self.show:
+    def _register_handles(self) -> None:
+        self.addHandler(self._info_handle)
+        self.addHandler(self._error_handle)
+        if self._isdebug:
+            self.addHandler(self._debug_handle)
+        if self._show:
             self.addHandler(RichHandler(
                 rich_tracebacks=True, locals_max_string=50))
 

@@ -33,9 +33,6 @@ class Main:
         if typ == 3:
             reConcat()
             exit()
-        elif typ == 4:
-            redelete()
-            exit()
         self.app.init()
         logger.debug(lang["main"]["shelf"])
         shelf = self.app.get_shelf()
@@ -115,7 +112,6 @@ class Main:
         book, area = self.interactive()
         chaps = self.dealApp(book, area)
         chaps = self.textTrans(chaps)
-        # print(chaps[0].content)
         retry = self.tts(chaps)
         self.merge(chaps)
         if retry is not None:
@@ -150,8 +146,11 @@ def main(typ: int):
                     ((main.ser.total_time * 60 / (end - bgn))))
 
     except SystemExit as e:
-        logger.info(
-            f"SystemExit with code {e.code} got, may exit not normally.")
+        if e.code != 0:
+            logger.info(
+                f"SystemExit with code {e.code} got, may exit not normally.")
+        else:
+            logger.info(f"SystemExit with code 0, exit normally.")
         return
     except KeyboardInterrupt:
         logger.info("Got keyboard interrupt, exit forcely.")

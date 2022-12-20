@@ -14,7 +14,7 @@ from typing import Optional
 from rich import print
 from rich.columns import Columns
 from rich.panel import Panel
-from rich.progress import Progress
+from rich.progress import Progress, TaskID
 from rich.traceback import Traceback
 from traceback import format_exception
 
@@ -48,14 +48,6 @@ def req(param, caller="Requester", logger=None, level=1, exit=False, wait=False)
     return json
 
 
-def chk(num: int):
-    o = 0
-    while num:
-        o |= num & 1
-        num >>= 1
-    return o
-
-
 class Stack:
     def __init__(self):
         self._arr = []
@@ -71,11 +63,8 @@ class Stack:
 
     def pop(self):
         t = self._arr.pop()
-        assert type(t) == self._typ
+        assert type(t) == self._typ, "The popped object is not the same with the others. May caused by editting inner variables directly."
         return t
-
-    def length(self) -> int:
-        return len(self._arr)
 
     def empty(self):
         return len(self._arr) == 0
@@ -84,12 +73,9 @@ class Stack:
         self._arr.clear()
         self._typ = None
 
-    def __len__(self) -> int:
-        return self.length()
-
     def __rich_repr__(self):
         yield "Stack"
-        yield f"length: {self.length()}"
+        yield f"length: {len(self._arr)}"
         contain = ""
         for obj in self._arr:
             contain += str(obj)
@@ -117,11 +103,8 @@ class Queue:
 
     def pop(self):
         t = self._arr.pop(0)
-        assert type(t) == self._typ
+        assert type(t) == self._typ, "The popped object is not the same with the others. May caused by editting inner variables directly."
         return t
-
-    def length(self) -> int:
-        return len(self._arr)
 
     def empty(self):
         return len(self._arr) == 0
@@ -130,22 +113,19 @@ class Queue:
         self._arr.clear()
         self._typ = None
 
-    def __len__(self) -> int:
-        return self.length()
-
     def __repr__(self) -> str:
         contain = ""
         for obj in self._arr:
             contain += str(obj)
             contain += ", "
-        return f"<Stack len={self.length()} contain={contain}>"
+        return f"<Stack len={len(self._arr)} contain={contain}>"
 
     def __str__(self) -> str:
         return self.__repr__()
 
     def __rich_repr__(self):
         yield "Stack"
-        yield f"length: {self.length()}"
+        yield f"length: {len(self._arr)}"
         contain = ""
         for obj in self._arr:
             contain += str(obj)
@@ -159,16 +139,15 @@ class ToApp:
 
     def init(self):
         self.getIP()
-        self.saveIP()
+        config.update({"ip": self.ip})
 
     def get_shelf(self):
         """
         Get the shelf infomation from the app.
         @return: Is succeeded.
         """
-        url = consts.GET_SHELF
         shelf: dict = req(
-            (url, [self.ip]), "ToApp", level=2, exit=True, wait=True
+            (consts.GET_SHELF, [self.ip]), "ToApp", level=2, exit=True, wait=True
         )  # type: ignore
         books = []
         t = []
@@ -202,9 +181,8 @@ class ToApp:
         return list({int(i) for i in chaps})
 
     def get_charpter_list(self, book: Book):
-        url = consts.GET_CHAPTER_LIST
         chapters = req(
-            (url, [self.ip, book.url]), "ToApp", level=2, exit=True, wait=True
+            (consts.GET_CHAPTER_LIST, [self.ip, book.url]), "ToApp", level=2, exit=True, wait=True
         )
         if chapters is None:
             return
@@ -216,8 +194,7 @@ class ToApp:
         with Progress() as pro:
             task = pro.add_task("Download chapters", total=len(chapters))
             for ch in chapters:
-                url = consts.GET_CONTENT
-                res = req((url, [self.ip, ch.url, ch.idx]), "ToApp")
+                res = req((consts.GET_CONTENT, [self.ip, ch.url, ch.idx]), "ToApp")
                 pro.update(task, advance=1)
                 if res is None:
                     retry.append(ch)
@@ -226,7 +203,8 @@ class ToApp:
         return (con, retry)
 
     def _testIP(self, ip: str):
-        if not match(r"(\d{1,3}\.){3}\d{1,3}", ip):
+        ret = match(r"(\d{1,3}\.){3}\d{1,3}(:\d{1,5})?", ip)
+        if ret is None or ret.group()!=ip:
             self.logger.debug(config.lang["utils"]["ToApp"]["re_fail"])
             return False
         try:
@@ -244,18 +222,10 @@ class ToApp:
             ErrorHandler(e, "testIP", self.logger, 2)()
 
     def getIP(self):
-        ip = ""
-        if isfile("ip.conf"):
-            try:
-                with open("ip.conf", "r") as f:
-                    ip = f.read()
-                    self.logger.debug("Set ip=%s" % ip)
-                    if self._testIP(ip):
-                        self.ip = ip
-                        return
-            except Exception as e:
-                ErrorHandler(e, "ToApp", self.logger)()
-            self.logger.debug("_testIP() returned False")
+        ip = config.ip
+        if self._testIP(ip):
+            self.ip = ip
+            return
         while True:
             _ip = input("ip: ")
             ip = _ip if _ip != "" else ip
@@ -268,19 +238,6 @@ class ToApp:
             else:
                 self.logger.debug("_testIP() returned False")
                 print(config.lang["utils"]["ToApp"]["app_fail"])
-
-    def saveIP(self):
-        if isdir("ip.conf"):
-            print(config.lang["utils"]["ToApp"]["dir_fail1"])
-            print(config.lang["utils"]["ToApp"]["dir_fail2"])
-            e = FileExistsError(config.lang["utils"]["ToApp"]["dir_fail3"])
-            ErrorHandler(e, "ToApp")()
-            return
-        try:
-            with open("ip.conf", "w") as f:
-                f.write(self.ip)
-        except Exception as e:
-            ErrorHandler(e, "ToApp")()
 
 
 class Trans:
@@ -313,8 +270,6 @@ class Trans:
                     tem += con_lines[i] + "\n"
                 else:
                     cut += con_lines[i] + "\n"
-                # if i == area[0]:
-                #     tem = ""
                 if i == area[1]:
                     cut += tem
                     cnt += tem.count("\x02")
@@ -363,17 +318,6 @@ class Trans:
                         self.logger.debug("Scan failed.")
                         self.logger.debug(tmp_line)
                         return None
-                # elif ch in self.open_bracket:
-                #     self.logger.debug("open_bracket but tem is not INVALID.")
-
-                #     self.logger.debug(f"tem={tem}")
-                #     self.logger.debug(f"newst={newst}")
-                #     self.area.push((tem+1,tem+1))
-                #     newst[tem]+="\x02"
-                #     tem = INVALID
-                #     top = st.pop()
-
-                #     tem = self._chk_push(st, cnt, log, i, line, tmp_line, j, ch)
             tmp_line = ''.join(tmp_line)
             newst.append(tmp_line)
         if self.area.empty():
@@ -453,51 +397,55 @@ class ToServer:
         id = int(task.get_name())
         self.finished.append((result, id))
 
-    def _deal(self, ret: SpeechSynthesisResult, j, retry: set[Chapter], chapters):
+    def _deal(self, chapters:list[Chapter], retry:set[Chapter], pro:Progress, pro_task:TaskID, task_cnt:int):
         logger = getLogger("callback")
-        try:
-            logger.debug("audio_duration=" + str(ret.audio_duration))
-            if ret.reason == consts.TTS_CANCEL:
-                assert ret.cancellation_details is not None
-                detail = ret.cancellation_details
-                logger.debug("Canceled")
-                logger.debug("idx=%d" % chapters[j].idx)
-                logger.debug("Detail: " + str(detail))
-                logger.debug("code: " + str(detail.error_code))
-                if detail.error_code == CancellationErrorCode.TooManyRequests:
-                    self.ups = True
-                    logger.error(config.lang["utils"]["ToSer"]["429"])
-                    raise UPSLimittedError(detail.error_details)
-                elif detail.error_code == CancellationErrorCode.RuntimeError:
-                    logger.error("RuntimeError: ")
-                    exc = detail.exception
-                    if isinstance(exc, BaseException):
-                        print(Traceback.from_exception(
-                            type(exc), exc, exc.__traceback__))
-                        logger.error("".join(format_exception(
-                            type(exc), exc, exc.__traceback__)))
-                    else:
-                        print(exc)
-                        logger.error(exc)
-            if ret.reason != consts.TTS_SUC:
-                logger.debug("Error")
-                logger.error(config.lang["utils"]
-                             ["ToSer"]["fail"] + str(ret.reason))
-                logger.debug("idx=%d" % chapters[j].idx)
-                # logger.debug("SSML Text: " + chapters[j].content)
-                raise RuntimeError("ret.reason=%s" % ret.reason)
-            else:
-                assert ret.audio_duration is not None
-                self.total_time += ret.audio_duration.total_seconds() / 60
-                if ret.audio_duration.total_seconds() == 0:
-                    logger.error(config.lang["utils"]["ToSer"]["fail_not_429"])
-                    raise RuntimeError("audio_duration=0")
-        except BaseException as e:
-            ErrorHandler(e, "AsyncReq", logger)()
-            retry.add(chapters[j])
-            return False
-        return True
-
+        for ret, j in self.finished:
+            # deal begin
+            try:
+                logger.debug("audio_duration=" + str(ret.audio_duration))
+                if ret.reason == consts.TTS_CANCEL:
+                    assert ret.cancellation_details is not None
+                    detail = ret.cancellation_details
+                    logger.debug("Canceled")
+                    logger.debug("idx=%d" % chapters[j].idx)
+                    logger.debug("Detail: " + str(detail))
+                    logger.debug("code: " + str(detail.error_code))
+                    if detail.error_code == CancellationErrorCode.TooManyRequests:
+                        self.ups = True
+                        logger.error(config.lang["utils"]["ToSer"]["429"])
+                        raise UPSLimittedError(detail.error_details)
+                    elif detail.error_code == CancellationErrorCode.RuntimeError:
+                        logger.error("RuntimeError: ")
+                        exc = detail.exception
+                        if isinstance(exc, BaseException):
+                            print(Traceback.from_exception(
+                                type(exc), exc, exc.__traceback__))
+                            logger.error("".join(format_exception(
+                                type(exc), exc, exc.__traceback__)))
+                        else:
+                            print(exc)
+                            logger.error(exc)
+                if ret.reason != consts.TTS_SUC:
+                    logger.debug("Error")
+                    logger.error(config.lang["utils"]
+                                ["ToSer"]["fail"] + str(ret.reason))
+                    logger.debug("idx=%d" % chapters[j].idx)
+                    raise RuntimeError("ret.reason=%s" % ret.reason)
+                else:
+                    assert ret.audio_duration is not None, "Audio here should not be not available. All error should be catched below."
+                    self.total_time += ret.audio_duration.total_seconds() / 60
+                    if ret.audio_duration.total_seconds() == 0:
+                        logger.error(config.lang["utils"]["ToSer"]["fail_not_429"])
+                        raise RuntimeError("audio_duration=0")
+            except BaseException as e:
+                ErrorHandler(e, "AsyncReq", logger)()
+                retry.add(chapters[j])
+            # deal end
+            pro.update(pro_task, advance=1)
+            task_cnt -= 1
+        self.finished.clear()
+        return task_cnt
+        
     def asyncDownload(self, chapters: list[Chapter], max_task: int = config.MAX_TASK):
         retry: set[Chapter] = set()
         self.retry_len = 0
@@ -518,23 +466,15 @@ class ToServer:
                 self.logger.info("Start waiting.")
                 while task_cnt >= max_task:
                     sleep(2)
-                    for rst, j in self.finished:
-                        self._deal(rst, j, retry, chapters)
-                        pro.update(pro_task, advance=1)
-                        task_cnt -= 1
-                    self.finished.clear()
-
+                    task_cnt = self._deal(chapters, retry, pro, pro_task, task_cnt)
                     if self.ups:
-                        self.ups = False
-                        stop_cnt += 1
                         self.logger.error("429 UPS Limitted.")
                         self.logger.info("Waiting for all runnning jobs...")
                         while task_cnt > 0:
                             sleep(2)
-                            for rst, j in self.finished:
-                                self._deal(rst, j, retry, chapters)
-                                task_cnt -= 1
-                            self.finished.clear()
+                            task_cnt = self._deal(chapters, retry, pro, pro_task, task_cnt)
+                        self.ups = False
+                        stop_cnt += 1
                         t = 9 + 3 * stop_cnt
                         if t > config.MAX_WAIT:
                             t = 15
@@ -546,11 +486,7 @@ class ToServer:
             self.logger.info("Start last async waiting.")
             while task_cnt > 0:
                 sleep(2)
-                for rst, j in self.finished:
-                    self._deal(rst, j, retry, chapters)
-                    pro.update(pro_task, advance=1)
-                    task_cnt -= 1
-                self.finished.clear()
+                task_cnt = self._deal(chapters, retry, pro, pro_task, task_cnt)
             self.logger.info("End async waiting.")
             # ----------------------------------------------
         return retry

@@ -12,15 +12,14 @@ MAX_TASK: int
 MAX_CHAR: int
 WAIT_TIME: Union[int, float]
 RETRY_SUB: Union[int, float]
-LIMIT_429: int
 MAX_WAIT: int
-FAIL_429: int
 TRANS_MODE: int
 TIMEOUT: Union[int, float]
 OPT_DIR: str
 DEBUG: bool
 TO_CONSOLE: bool
 LANG_FILE: str
+ip:str
 lang: dict[str, dict]
 
 
@@ -32,6 +31,13 @@ def load():
         config.update(d)
     return config
 
+def update(data:dict[str,Any]):
+    with open("config.json", "r") as f:
+        new:dict[str,Any] = json.load(f)
+    new.update(data)
+    with open("config.json", "w") as f:
+        json.dump(new,f)
+    globals().update(new)
 
 def check():
     typ: dict[str, tuple] = DEFAULT_TYPE
