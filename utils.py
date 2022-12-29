@@ -67,7 +67,7 @@ class Stack:
         return t
 
     def empty(self):
-        return len(self._arr) == 0
+        return not self._arr
 
     def clear(self):
         self._arr.clear()
@@ -76,10 +76,7 @@ class Stack:
     def __rich_repr__(self):
         yield "Stack"
         yield f"length: {len(self._arr)}"
-        contain = ""
-        for obj in self._arr:
-            contain += str(obj)
-            contain += ", "
+        contain = ", ".join(map(str, self._arr))
         yield f"contain: {contain}"
 
 
@@ -151,8 +148,8 @@ class ToApp:
         )  # type: ignore
         books = []
         t = []
-        for i in range(len(shelf)):
-            book = Book(**shelf[i])
+        for i, shelf_item in enumerate(shelf):
+            book = Book(**shelf_item)
             if not book.available:
                 self.logger.debug(config.lang["utils"]["ToApp"]["not_avai"])
                 continue
@@ -204,7 +201,7 @@ class ToApp:
 
     def _testIP(self, ip: str):
         ret = match(r"(\d{1,3}\.){3}\d{1,3}(:\d{1,5})?", ip)
-        if ret is None or ret.group()!=ip:
+        if not ret or ret.group()!=ip:
             self.logger.debug(config.lang["utils"]["ToApp"]["re_fail"])
             return False
         try:
@@ -228,7 +225,7 @@ class ToApp:
             return
         while True:
             _ip = input("ip: ")
-            ip = _ip if _ip != "" else ip
+            ip = _ip if _ip else ip
             if ":" not in ip:
                 ip += ":1122"
             self.logger.debug("Set ip=%s" % ip)
@@ -281,10 +278,8 @@ class Trans:
                     
                 i += 1
             cut = escape(cut)
-            cut = cut.replace(
-                "\x01", '</prosody></voice><voice name="zh-CN-YunxiNeural"><prosody rate="18%" pitch="0%">')
-            cut = cut.replace(
-                "\x02", '</prosody></voice><voice name="zh-CN-XiaohanNeural"><prosody rate="18%" pitch="0%">')
+            cut = cut.replace("\x01", '</prosody></voice><voice name="zh-CN-YunxiNeural"><prosody rate="18%" pitch="0%">')
+            cut = cut.replace("\x02", '</prosody></voice><voice name="zh-CN-XiaohanNeural"><prosody rate="18%" pitch="0%">')
             if cut.count("</voice>") > 50:
                 self.logger.error("Voice tag out of limit.")
                 self.logger.debug(con)
@@ -305,8 +300,7 @@ class Trans:
             tmp_line = [s for s in line]
             for j, ch in enumerate(line):
                 if ch in self.open_bracket and tem == INVALID:
-                    tem = self._chk_push(
-                        st, cnt, log, i, line, tmp_line, j, ch)
+                    tem = self._chk_push(st, cnt, log, i, line, tmp_line, j, ch)
                 elif ch in self.close_bracket and tem != INVALID:
                     self.area.push((tem+1, i+1))
                     log.append(f'line {i}: {line}')
@@ -340,7 +334,7 @@ class Trans:
 
     def title(self, chap: Chapter):
         title = sub(r"""[\*\/\\\|\<\>\? \:\.\'\"\!]""", "", chap.title)
-        title = "%03d" % chap.idx + "_" + title
+        title = f"{chap.idx:03d}_{title}"
         return title
 
     def __call__(self, chap: Chapter):
@@ -349,7 +343,7 @@ class Trans:
         if self.type == 1:
             content = self.trans(chap)
             for i, t in enumerate(content):
-                opt.append(Chapter(chap.idx, title + f" ({i}).mp3", t))
+                opt.append(Chapter(chap.idx, f"{title} ({i}).mp3", t))
             return opt
         elif self.type == 2:
             self.logger.debug(
@@ -366,7 +360,7 @@ class Trans:
                 ErrorHandler(e, "Trans", self.logger)
                 return Trans(1)(chap)
             for i, t in enumerate(content):
-                opt.append(Chapter(chap.idx, title + f" ({i}).mp3", t))
+                opt.append(Chapter(chap.idx, f"{title} ({i}).mp3", t))
             return opt
 
 
