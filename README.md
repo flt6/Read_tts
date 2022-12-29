@@ -68,6 +68,7 @@
 ## 配置
 
 你可以运行一次主程序，便会生成`config.json`，并附有默认配置。你可以修改，或者使用自定义json，这个json必须是原json的子集。程序会自动检查类型和key。
+
 |名称|类型|默认|含义|
 |-|-|-|-|
 |MAX_RETRY|int|5|重试次数最大值|
@@ -82,6 +83,7 @@
 |DEBUG|bool|`false`|显示调试信息|
 |TO_CONSOLE|bool|`true`|在控制待中显示日志(**包括INFO和ERROR信息**)|
 |LANG_FILE|str|`lang_en.json`|语言文件名|
+|ip|str||app的ip（包含端口）|
 
 ## 语言
 

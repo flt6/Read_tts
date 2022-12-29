@@ -10,3 +10,7 @@ config.json
 *.onefile-build
 *.dist
 *.build
+dist
+build
+data.dat
+main.spec
