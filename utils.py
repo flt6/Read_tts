@@ -33,7 +33,7 @@ def req(param, caller="Requester", logger=None, level=1, exit=False, wait=False)
         getLogger("request").debug("url=%s,caller=%s" % (url, caller))
         res = get(url, timeout=config.TIMEOUT)
         if res.status_code != 200:
-            raise ServerError(res.status_code)  # type: ignore
+            raise ServerError(res.status_code) # type: ignore
     except Exception as e:
         ErrorHandler(e, caller, logger, level, exit, wait)()
         return None
@@ -191,8 +191,13 @@ class ToApp:
         with Progress() as pro:
             task = pro.add_task("Download chapters", total=len(chapters))
             for ch in chapters:
-                res = req((consts.GET_CONTENT, [self.ip, ch.url, ch.idx]), "ToApp")
-                pro.update(task, advance=1)
+                try:
+                    pro.update(task, advance=1)
+                    res = req((consts.GET_CONTENT, [self.ip, ch.url, ch.idx]), "ToApp")
+                except ServerError as e: # type: ignore
+                    if e.msg == "404" # type: ignore
+                    retry.append(ch)
+                    continue
                 if res is None:
                     retry.append(ch)
                     continue
