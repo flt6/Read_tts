@@ -195,9 +195,9 @@ class ToApp:
                     pro.update(task, advance=1)
                     res = req((consts.GET_CONTENT, [self.ip, ch.url, ch.idx]), "ToApp")
                 except ServerError as e: # type: ignore
-                    if e.msg == "404" # type: ignore
-                    retry.append(ch)
-                    continue
+                    if e.msg == "404": # type: ignore
+                        retry.append(ch)
+                        continue
                 if res is None:
                     retry.append(ch)
                     continue
@@ -462,7 +462,7 @@ class ToServer:
                 task.add_done_callback(self._callback)
                 self.logger.debug(f"Create task {task}")
                 task_cnt += 1
-                self.logger.info("Start waiting.")
+                # self.logger.info("Start waiting.")
                 while task_cnt >= max_task:
                     sleep(1)
                     task_cnt = self._deal(chapters, retry, pro, pro_task, task_cnt)
@@ -480,13 +480,13 @@ class ToServer:
                         self.logger.info("Sleep for %02d seconds..." % t)
                         sleep(t)
                         self.logger.info("UPS error wait end")
-                self.logger.info("End waiting.")
+                # self.logger.info("End waiting.")
             # ----------------------------------------------
-            self.logger.info("Start last async waiting.")
+            print("[yellow1]Start last async waiting.[/yellow1]")
             while task_cnt > 0:
                 sleep(1)
                 task_cnt = self._deal(chapters, retry, pro, pro_task, task_cnt)
-            self.logger.info("End async waiting.")
+            print("[yellow1]End async waiting.[/yellow1]")
             # ----------------------------------------------
         return retry
 
