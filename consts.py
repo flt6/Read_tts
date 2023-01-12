@@ -33,6 +33,7 @@ DEFAULT_CONFIG = {
     "OPT_DIR": "Output",
     "DEBUG": False,
     "TO_CONSOLE": True,
+    "bracket": ["“\"'【","”\"'】"],
     "LANG_FILE": "lang_zh.json",
     "ip": ""
 }
@@ -48,6 +49,7 @@ DEFAULT_TYPE = {
     "TIMEOUT": (int, float),
     "OPT_DIR": (str,),
     "DEBUG": (bool,),
+    "bracket": (list,),
     "TO_CONSOLE": (bool,),
     "LANG_FILE": (str,),
     "ip": (str,)

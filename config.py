@@ -18,6 +18,7 @@ TIMEOUT: Union[int, float]
 OPT_DIR: str
 DEBUG: bool
 TO_CONSOLE: bool
+bracket: list[str]
 LANG_FILE: str
 ip:str
 lang: dict[str, dict]
@@ -32,10 +33,10 @@ def load():
     return config
 
 def update(data:dict[str,Any]):
-    with open("config.json", "r") as f:
+    with open("config.json", "r",encoding="utf-8") as f:
         new:dict[str,Any] = json.load(f)
     new.update(data)
-    with open("config.json", "w") as f:
+    with open("config.json", "w",encoding="utf-8") as f:
         json.dump(new,f)
     globals().update(new)
 
