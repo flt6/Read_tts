@@ -70,7 +70,8 @@ If you see files like `340_第xxx章xxx (1).mp3` for the last chapter, this is a
 |MAX_WAIT|int|20|Max time to wait<sup>[2](#Notes)</sup>|
 |TIMEOUT|int/float|3|Timeout when connecting to App|
 |OPT_DIR|int|Output|Output folder|
-|DEBUG|bool|`false`|Show debug infomation|
+|SHOW_DEBUG|bool|`false`|Show debug infomation|
+|SAVE_LOG|bool|`true`|Save log information|
 |TO_CONSOLE|bool|`true`|Show log(**including INFO and ERROR info**) to console|
 
 ### Notes

@@ -74,7 +74,7 @@ class ErrorHandler:
         self.lgexp = lg.exception
         self.lgdbg = lg.debug
 
-        self.dbg = config.DEBUG
+        self.dbg = config.SHOW_DEBUG
         self.level = level
         self.err = err
         self.src = src

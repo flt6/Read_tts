@@ -31,7 +31,8 @@ DEFAULT_CONFIG = {
     "TRANS_MODE": 2,
     "TIMEOUT": 3,
     "OPT_DIR": "Output",
-    "DEBUG": False,
+    "SAVE_LOG": True,
+    "SHOW_DEBUG": False,
     "TO_CONSOLE": True,
     "LANG_FILE": "lang_zh.json",
     "ip": ""
@@ -47,7 +48,8 @@ DEFAULT_TYPE = {
     "TRANS_MODE": (int,),
     "TIMEOUT": (int, float),
     "OPT_DIR": (str,),
-    "DEBUG": (bool,),
+    "SAVE_LOG": (bool,),
+    "SHOW_DEBUG": (bool,),
     "TO_CONSOLE": (bool,),
     "LANG_FILE": (str,),
     "ip": (str,)
