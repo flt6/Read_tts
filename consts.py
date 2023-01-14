@@ -34,6 +34,7 @@ DEFAULT_CONFIG = {
     "SAVE_LOG": True,
     "SHOW_DEBUG": False,
     "TO_CONSOLE": True,
+    "bracket": ["“\"'【","”\"'】"],
     "LANG_FILE": "lang_zh.json",
     "ip": ""
 }
@@ -48,8 +49,9 @@ DEFAULT_TYPE = {
     "TRANS_MODE": (int,),
     "TIMEOUT": (int, float),
     "OPT_DIR": (str,),
-    "SAVE_LOG": (bool,),
     "SHOW_DEBUG": (bool,),
+    "SAVE_LOG": (bool,),
+    "bracket": (list,),
     "TO_CONSOLE": (bool,),
     "LANG_FILE": (str,),
     "ip": (str,)

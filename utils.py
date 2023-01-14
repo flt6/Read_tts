@@ -243,12 +243,11 @@ class ToApp:
 
 
 class Trans:
-    open_bracket = "“\"'【"
-    close_bracket = "”\"'】"
-
     def __init__(self, type: Optional[int] = 1):
         self.type = type
         self.area = Queue()
+        self.open_bracket = config.bracket[0]
+        self.close_bracket = config.bracket[1]
         self.logger = getLogger("Trans")
 
     def trans(self, chap: Chapter):
