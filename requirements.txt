@@ -2,3 +2,5 @@ requests
 alive_progress
 aspeak
 fastapi[all]
+rich
+git+https://github.com/flt6/tts_rebuild

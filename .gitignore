@@ -9,6 +9,16 @@
 *.onefile-build
 Output*
 logs
-DEBUG
 .vscode
 __pycache__
+config.json
+*.conf
+.vscode
+*.dmp
+*.onefile-build
+*.dist
+*.build
+dist
+build
+data.dat
+main.spec
