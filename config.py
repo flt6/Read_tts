@@ -16,7 +16,8 @@ MAX_WAIT: int
 TRANS_MODE: int
 TIMEOUT: Union[int, float]
 OPT_DIR: str
-DEBUG: bool
+SAVE_LOG: bool
+SHOW_DEBUG: bool
 TO_CONSOLE: bool
 bracket: list[str]
 LANG_FILE: str

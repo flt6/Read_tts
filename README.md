@@ -80,7 +80,8 @@
 |TRANS_MODE|int|2|转化模式：目前有效值为基础模式(1)、角色模式(2)<sup>[4](#Notes)</sup>|
 |TIMEOUT|int/float|3|链接到app的超时值（单位：秒）|
 |OPT_DIR|int|Output|输出文件夹|
-|DEBUG|bool|`false`|显示调试信息|
+|SHOW_DEBUG|bool|`false`|显示调试信息|
+|SAVE_LOG|bool|`true`|保存日志信息|
 |TO_CONSOLE|bool|`true`|在控制待中显示日志(**包括INFO和ERROR信息**)|
 |LANG_FILE|str|`lang_en.json`|语言文件名|
 |ip|str||app的ip（包含端口）|

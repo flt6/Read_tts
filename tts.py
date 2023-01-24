@@ -4,7 +4,7 @@ from mytts import AudioOutputConfig, SpeechConfig, SpeechSynthesizer
 from mytts.enums import SpeechSynthesisOutputFormat
 
 from log import getLogger
-from config import DEBUG
+from config import SHOW_DEBUG
 
 logger = getLogger("TTS")
 fmt = SpeechSynthesisOutputFormat.Audio24Khz48KBitRateMonoMp3
@@ -14,7 +14,7 @@ cfg.set_speech_synthesis_output_format(fmt)
 
 def tts(ssml: str, path: str):
     audio_cfg = AudioOutputConfig(filename=path)
-    provider = SpeechSynthesizer(cfg, audio_cfg, debug=DEBUG)
+    provider = SpeechSynthesizer(cfg, audio_cfg, debug=SHOW_DEBUG)
     return provider.speak_ssml_async(ssml)._task
 
 
