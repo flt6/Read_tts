@@ -265,7 +265,7 @@ class Trans:
                 area = (-1, -1)
             else:
                 area = self.area.pop()
-            cnt = 0
+            cnt = cut.count("\x02")
             while len(cut) < config.MAX_CHAR and i < totLines and cnt+tem.count("\x02") < 24:
                 if i >= area[0] and i <= area[1]:
                     tem += con_lines[i] + "\n"
@@ -284,7 +284,7 @@ class Trans:
             cut = escape(cut)
             cut = cut.replace("\x01", '</prosody></voice><voice name="zh-CN-YunxiNeural"><prosody rate="18%" pitch="0%">')
             cut = cut.replace("\x02", '</prosody></voice><voice name="zh-CN-XiaohanNeural"><prosody rate="18%" pitch="0%">')
-            if cut.count("</voice>") > 50:
+            if cut.count("</voice>") > 49:
                 self.logger.error("Voice tag out of limit.")
                 self.logger.debug(con)
                 raise AssertionError("Voice tag out of limit.")

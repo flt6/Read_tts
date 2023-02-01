@@ -12,22 +12,20 @@ jobs:
       max-parallel: 5
 
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout
+      uses: actions/checkout@v3.3.0
     - name: Set up Python 3.10
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v4
       with:
-        python-version: 3.10
-    - name: Add conda to system path
-      run: |
-        # $CONDA is an environment variable pointing to the root of the miniconda directory
-        echo $CONDA/bin >> $GITHUB_PATH
+        python-version: '3.10'
+        cache: 'pip' # caching pip dependencies
     - name: Install dependencies
       run: |
-        pip install nuitka
+        pip install pyinstaller
         pip install -r requirements.txt
     - name: build
       run: |
-        nuitka --follow-imports --noinclude-IPython-mode=nofollow --standalone --include-data-file="grapheme_break_property.json"=grapheme\data\  --include-data-file=fail.mp3=fail.mp3 --assume-yes-for-downloads --onefile main.py
+        pyinstaller -F --add-data fail.mp3;. --disable-windowed-traceback -c main.py
     - name: upload
       uses: actions/upload-artifact@v3.0.0
       with:
