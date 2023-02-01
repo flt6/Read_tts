@@ -542,14 +542,18 @@ def _concat(tmp: list[str], name: str):
 
 def reConcat():
     files = listdir(config.OPT_DIR)
-    name = ""
+    files.sort()
+    name = "NEVERAPPEAR"
     tmp: list[str] = []
     for file in files:
         if " (0).mp3" in file:
+            xor=lambda a,b:(a and b) or (not a and not b)
+            assert xor(name=="NEVERAPPEAR",len(tmp)==0), f"name={name}, tmp={tmp}"
             _concat(tmp, name)
             tmp = []
             name = file.replace(" (0).mp3", ".mp3")
-        tmp.append(file)
+        if search(r"\s\(\d+\)\.mp3$", file) is not None:
+            tmp.append(file)
     _concat(tmp, name)
 
 
