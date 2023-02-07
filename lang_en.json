@@ -33,6 +33,7 @@
     "tts_bgn": "tts request started.",
     "trans_st": "Trans start.",
     "trans_end": "Trans completed.",
+    "trans_tip": "[b]NOT WRITTEN[/b]",
     "tts_end": "tts completed.",
     "mer_st": "Start merge mp3",
     "mer_end": "merge completed.",

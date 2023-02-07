@@ -61,7 +61,7 @@
 
 ## 配置
 
-你可以运行一次主程序，便会生成`config.json`，并附有默认配置。你可以修改，或者使用自定义json，这个json必须是原json的子集。程序会自动检查类型和key。
+你可以运行一次主程序，便会生成`config.json`，并附有默认配置。你可以修改，或者使用自定义json，这个json必须是原json的子集。程序会自动检查类型和key，在软件更新过程中，部分参数有删除或改动，软件会自动更新到最新参数。如果您确定您的json在老版可用但新版不可用，请在Github上提Issue。
 
 |名称|类型|默认|含义|
 |-|-|-|-|
@@ -76,8 +76,9 @@
 |OPT_DIR|int|Output|输出文件夹|
 |SHOW_DEBUG|bool|`false`|显示调试信息|
 |SAVE_LOG|bool|`true`|保存日志信息|
+|SAVE_REQ|bool|`false`|保存所有请求记录（用于反馈）|
 |TO_CONSOLE|bool|`true`|在控制待中显示日志(**包括INFO和ERROR信息**)|
-|LANG_FILE|str|`lang_en.json`|语言文件名|
+|LANG_FILE|str|`zh`|语言文件<sup>[5](#Notes)|
 |ip|str||app的ip（包含端口）|
 
 ## 语言
@@ -115,6 +116,7 @@
 2. 我使用了`aspeak`模块来合成音频，但是只有一些[限制](https://github.com/kxxt/aspeak#limitations)。其中还有一个没有被记录的限制：不能短时间内合成多次。如果合成失败率大于`LIMIT_429`，并且完成（失败）了`FAIL_429`个音频，程序会等待正在运行的所有任务结束，然后等待`9+3*stop_cnt`。其中，变量`stop_cnt`是总失败次数，并且等待时间不会超过`MAX_WAIT`。如果超过，便会将等待时间固定为15s。
 3. 最后一个文件好像会被ffmpeg或者python进程占用，这似乎不是我的代码的问题，因为只有在windows平台上出现。
 4. 运行模式[见上](#运行模式)
+5. 内置语言文件`zh`和`en`，对应源文件`lang_zh.json`和`lang_en.json`，如果想要修改语言文件，请同时修改config中的`LANG_FILE`，即便文件名`lang_zh.json`或`zh`也不行。
 
 ## FAQ
 

@@ -1,4 +1,5 @@
 import asyncio
+from pickle import dumps, loads
 from html import escape
 from os import listdir, mkdir, remove
 from os.path import isdir, isfile
@@ -7,7 +8,7 @@ from subprocess import PIPE, run
 from time import sleep
 
 from mytts import CancellationErrorCode, SpeechSynthesisResult
-from requests import get
+import requests
 from requests.exceptions import RequestException
 from requests.utils import quote  # type: ignore
 from typing import Optional
@@ -25,6 +26,29 @@ from log import Log, getLogger
 from model import Book, Chapter, ChapterList
 from tts import tts
 
+
+if isfile("data.dmp") and config.SAVE_REQ:
+    with open("data.dmp","rb") as f:
+        req_data = loads(f.read())
+else:
+    req_data = {}
+
+def get(*args,**kwargs) -> requests.Response:
+    if not config.SAVE_REQ:
+        return requests.get(*args,**kwargs)
+    log = getLogger("get")
+    dmp = dumps([args, kwargs])
+    if dmp not in req_data.keys():
+        log.debug("not in req_data")
+        ret = requests.get(*args,**kwargs)
+        req_data.update({dmp:ret})
+        with open("data.dmp","wb") as f:
+            f.write(dumps(req_data))
+        return ret
+    else:
+        log.debug("in req_data")
+        log.debug(req_data[dmp])
+        return req_data[dmp]
 
 def req(param, caller="Requester", logger=None, level=1, exit=False, wait=False):
     try:

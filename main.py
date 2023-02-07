@@ -78,6 +78,7 @@ class Main:
             tem.extend(self.trans(chap))
         logger.info(lang["main"]["trans_end"])
         logger.debug(tem)
+        print(lang["main"]["trans_tip"])
         return tem
 
     def tts(self, chaps: list[Chapter]):

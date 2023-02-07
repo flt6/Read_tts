@@ -33,9 +33,10 @@ DEFAULT_CONFIG = {
     "OPT_DIR": "Output",
     "SAVE_LOG": True,
     "SHOW_DEBUG": False,
+    "SAVE_REQ": False,
     "TO_CONSOLE": True,
     "bracket": ["“\"'【","”\"'】"],
-    "LANG_FILE": "lang_zh.json",
+    "LANG_FILE": "zh",
     "ip": ""
 }
 
@@ -51,10 +52,24 @@ DEFAULT_TYPE = {
     "OPT_DIR": (str,),
     "SHOW_DEBUG": (bool,),
     "SAVE_LOG": (bool,),
+    "SAVE_REQ": (bool,),
     "bracket": (list,),
     "TO_CONSOLE": (bool,),
     "LANG_FILE": (str,),
     "ip": (str,)
+}
+
+def _debug_trans(data:dict) -> bool:
+    debug = data["DEBUG"]
+    if not isinstance(debug,bool):
+        return False
+    data["SHOW_DEBUG"] = debug
+    data["SAVE_LOG"] = debug
+    data.pop("DEBUG")
+    return True
+
+OLD_DATA_TRANSFORM={
+    "DEBUG": _debug_trans
 }
 
 
