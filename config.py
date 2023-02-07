@@ -35,9 +35,12 @@ def load():
     return config
 
 def update(data:dict[str,Any]):
-    # with open("config.json", "r",encoding="utf-8") as f:
-    #     new:dict[str,Any] = json.load(f)
-    # new.update(data)
+    with open("config.json", "r",encoding="utf-8") as f:
+        new:dict[str,Any] = json.load(f)
+    new.update(data)
+    _update(new)
+
+def _update(data:dict[str,Any]):
     with open("config.json", "w",encoding="utf-8") as f:
         json.dump(data,f)
     globals().update(data)
