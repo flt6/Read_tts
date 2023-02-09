@@ -25,7 +25,7 @@ jobs:
         pip install -r requirements.txt
     - name: build
       run: |
-        pyinstaller -F --add-data fail.mp3;. --disable-windowed-traceback -c main.py
+        pyinstaller -F --add-data fail.mp3:. --disable-windowed-traceback -c main.py
     - name: upload
       uses: actions/upload-artifact@v3.0.0
       with:
