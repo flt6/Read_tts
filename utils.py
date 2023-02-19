@@ -356,9 +356,8 @@ class Trans:
         log.append(f'line {i}: {line}')
         log.append(f'character {j}: push')
         tmp_line[j] = "\x01"
-        tem = i
         cnt += 1
-        return tem
+        return i
 
     def title(self, chap: Chapter):
         title = sub(r"""[\*\/\\\|\<\>\? \:\.\'\"\!]""", "", chap.title)
@@ -376,6 +375,7 @@ class Trans:
         elif self.type == 2:
             self.logger.debug(
                 f"Start handling {chap.title} with character mode.")
+            chsp_src = chap.copy()
             try:
                 con_lines = self._chk(chap.content)
                 assert con_lines is not None
@@ -386,7 +386,7 @@ class Trans:
                     "Character transfering scan failed, falling back to basic.")
                 self.logger.debug(chap.title)
                 ErrorHandler(e, "Trans", self.logger)
-                return Trans(1)(chap)
+                return Trans(1)(chsp_src)
             for i, t in enumerate(content):
                 opt.append(Chapter(chap.idx, f"{title} ({i}).mp3", t))
             return opt

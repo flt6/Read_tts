@@ -4,7 +4,7 @@ from logging import (
     INFO,
     FileHandler,
     Formatter,
-    Logger,
+    Logger
 )
 from rich.logging import RichHandler
 from os import mkdir, path

@@ -81,6 +81,9 @@ class Chapter:
         self.title = title
         self.content = content
         self.dict = kwargs
+    
+    def copy(self) -> "Chapter":
+        return Chapter(self.idx, self.title,self.content,**self.dict)
 
     def __repr__(self):
         return "<Chapter idx={} title={} content={}>".format(
