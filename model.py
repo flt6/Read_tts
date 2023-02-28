@@ -87,7 +87,7 @@ class Chapter:
 
     def __repr__(self):
         return "<Chapter idx={} title={} content={}>".format(
-            self.idx, self.title, self.content.strip()[:5]
+            self.idx, self.title, self.content.strip()[:10]
         )
 
     def __rich_repr__(self) -> rich.repr.Result:

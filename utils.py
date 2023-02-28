@@ -277,11 +277,11 @@ class Trans:
     def trans(self, chap: Chapter):
         con = chap.content
         con = chap.title + "\n" + con
-        con_lines = con.splitlines()
+        con_lines = con.splitlines() # source content lines
         totLines = len(con_lines)
-        content = []
+        content = [] # formatted content, list[str(SSML)]
         i = 0
-        tem = ""
+        tem = "" # temporary content, for the some lines left by last turn
         while i < totLines:
             cut = tem
             tem = ""
@@ -289,15 +289,18 @@ class Trans:
                 area = (-1, -1)
             else:
                 area = self.area.pop()
-            cnt = cut.count("\x02")
-            while len(cut) < config.MAX_CHAR and i < totLines and cnt+tem.count("\x02") < 24:
+            bracket_num = cut.count("\x02")
+            # len(cut) < config.MAX_CHAR         : Make sure the total character is less than the order.
+            # i < totLines                       : Loop all the lines.
+            # bracket_num+tem.count("\x02") < 24 : Make sure the <voice> tag is less than 50(half=25, basic 1).
+            while len(cut) < config.MAX_CHAR and i < totLines and bracket_num+tem.count("\x02") < 24:
                 if i >= area[0] and i <= area[1]:
                     tem += con_lines[i] + "\n"
                 else:
                     cut += con_lines[i] + "\n"
-                if i == area[1] and len(cut) < config.MAX_CHAR and i < totLines and cnt+tem.count("\x02") < 24:
+                if i == area[1] and len(cut) < config.MAX_CHAR and i < totLines and bracket_num+tem.count("\x02") < 24:
                     cut += tem
-                    cnt += tem.count("\x02")
+                    bracket_num += tem.count("\x02")
                     tem = ""
                     if self.area.empty():
                         area = (-1, -1)
@@ -321,10 +324,10 @@ class Trans:
         cnt = 0
         newst: list[str] = []
         log = []
+        INVALID = 0xFFFFFFFF
+        tem = INVALID
+        # This shouldn't be used. As a result, an IndexError will be raised.
         for i, line in enumerate(con.splitlines()):
-            INVALID = 0xFFFFFFFF
-            tem = INVALID
-            # This shouldn't be used. As a result, an IndexError will be raised.
             tmp_line = [s for s in line]
             for j, ch in enumerate(line):
                 if ch in self.open_bracket and tem == INVALID:
